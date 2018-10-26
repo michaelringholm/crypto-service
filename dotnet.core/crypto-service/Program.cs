@@ -43,49 +43,6 @@ namespace pem_console
             var jwtRereadBad = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-bad.pub", "RS256", validationParameters);
 
             Console.WriteLine ("Ended!");
-        }
-
-        static void MainOld(string[] args)
-        {
-            Console.WriteLine("Started...");
-            String encryptedBase64String = null;
-            
-            using (var rsa = RSA.Create())
-            {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(@"public-key.pem");
-                if (rsaParameters != null)
-                {
-                    rsa.ImportParameters(rsaParameters.Value);
-                    var encryptedBytes = rsa.Encrypt(Encoding.UTF8.GetBytes("Hello from dotNet.core"), RSAEncryptionPadding.OaepSHA256);
-                    encryptedBase64String = Convert.ToBase64String(encryptedBytes);
-                    Console.WriteLine($"encryptedBase64String={encryptedBase64String}");
-                }
-            }
-
-            if(!String.IsNullOrEmpty(encryptedBase64String)) {
-                var claims = new[]
-                {
-                    new Claim("data-encoding", "UTF-8"),
-                    new Claim("caller", "commentor-api"),
-                    new Claim("data", encryptedBase64String),
-                };
-                var base64JWTToken = new PEMCryptoService().CreateJWTToken(@"private-key.rsa", "commentor.dk", claims);
-                Console.WriteLine($"base64JWTToken={base64JWTToken}");
-            }
-
-            using (var rsa = RSA.Create())
-            {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(@"private-key.rsa");
-                if (rsaParameters != null)
-                {
-                    rsa.ImportParameters(rsaParameters.Value);
-                    var decryptedBytes = rsa.Decrypt(Convert.FromBase64String(encryptedBase64String), RSAEncryptionPadding.OaepSHA256);
-                    Console.WriteLine($"decryptedBytes={Encoding.UTF8.GetString(decryptedBytes)}");
-                }
-            }
-
-            Console.WriteLine("Ended!");
-        }
-        
+        }        
     }
 }
