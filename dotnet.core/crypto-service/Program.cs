@@ -10,7 +10,25 @@ namespace pem_console
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main (string[] args) {
+            Console.WriteLine("Started...");
+            Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/");
+            Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
+            IJWTService jwtService = new RSAJWTService();
+
+            var jwt = jwtService.GenerateJWTFromRSA(@".\local\rsa-prv-key.ppk");
+            var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
+            Console.WriteLine($"serializedJWT:{serializedJWT}");
+            var jwtIsValid = jwtService.ValidateJWTRSA(serializedJWT, @".\local\rsa-pub-key.pub");
+            Console.WriteLine($"JWT is valid:{jwtIsValid}");
+            var jwtReread = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key.pub");
+            Console.WriteLine($"serializedJWTReread:{jwtReread}");
+            var jwtRereadBad = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-bad.pub");
+
+            Console.WriteLine ("Ended!");
+        }
+
+        static void MainOld(string[] args)
         {
             Console.WriteLine("Started...");
             String encryptedBase64String = null;
