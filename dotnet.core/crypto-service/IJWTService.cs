@@ -1,11 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 
 namespace pem_console
 {
     public interface IJWTService
     {
-        JwtSecurityToken GenerateJWTFromRSA(string privateKey);
-        bool ValidateJWTRSA(string serializedJWT, string publicKey);
-        JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicKey);
+        JwtSecurityToken GenerateJWTFromRSA(JwtPayload payload, string privateKey, string algorithm);
+        bool ValidateJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters);
+        JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters);
     }
 }

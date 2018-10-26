@@ -9,7 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace pem_console {    
     public class RSAJWTService : IJWTService {
 
-        public JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicKey) {
+        public JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters) {
             var securityHandler = new JwtSecurityTokenHandler();
             var rsa = RSA.Create ();
             Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
@@ -17,21 +17,8 @@ namespace pem_console {
                 rsa.ImportParameters (rsaParameters.Value);
 
                 var securityKey = new Microsoft.IdentityModel.Tokens.RsaSecurityKey(rsaParameters.Value);
-                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials (securityKey, "RS256");
-
-                var validationParameters = new TokenValidationParameters()
-                {
-                    //IssuerSigningToken = new BinarySecretSecurityToken(_key),
-                // SecurityKey: creds,
-                    IssuerSigningKey = credentials.Key,
-                    //ValidAudience = "yourdomain.com",
-                    ValidIssuer = "commentor.dk",
-                    ValidateLifetime = true,
-                    ValidateAudience = false,
-                    ValidateIssuer = true,
-                    ValidateIssuerSigningKey = true
-                };
-
+                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials (securityKey, algorithm);
+                validationParameters.IssuerSigningKey = credentials.Key;
                 SecurityToken validatedToken;
                 try {
                     securityHandler.ValidateToken(serializedJWT, validationParameters, out validatedToken);
@@ -47,7 +34,7 @@ namespace pem_console {
             
         }        
 
-        public bool ValidateJWTRSA(string serializedJWT, string publicKey)
+        public bool ValidateJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters)
         {
             var securityHandler = new JwtSecurityTokenHandler();
             var rsa = RSA.Create ();
@@ -56,21 +43,8 @@ namespace pem_console {
                 rsa.ImportParameters (rsaParameters.Value);
 
                 var securityKey = new Microsoft.IdentityModel.Tokens.RsaSecurityKey(rsaParameters.Value);
-                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials (securityKey, "RS256");
-
-                var validationParameters = new TokenValidationParameters()
-                {
-                    //IssuerSigningToken = new BinarySecretSecurityToken(_key),
-                // SecurityKey: creds,
-                    IssuerSigningKey = credentials.Key,
-                    //ValidAudience = "yourdomain.com",
-                    ValidIssuer = "commentor.dk",
-                    ValidateLifetime = true,
-                    ValidateAudience = false,
-                    ValidateIssuer = true,
-                    ValidateIssuerSigningKey = true
-                };
-
+                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials (securityKey, algorithm);
+                validationParameters.IssuerSigningKey = credentials.Key;
                 SecurityToken validatedToken;
                 try {
                     securityHandler.ValidateToken(serializedJWT, validationParameters, out validatedToken);
@@ -83,20 +57,15 @@ namespace pem_console {
             return false;
         }          
 
-        public JwtSecurityToken GenerateJWTFromRSA(string privateKey) {
+        public JwtSecurityToken GenerateJWTFromRSA(JwtPayload payload, string privateKey, string algorithm) {
             var rsa = RSA.Create ();
             Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile (privateKey);
             if (rsaParameters != null) {
                 rsa.ImportParameters (rsaParameters.Value);
 
                 var securityKey = new Microsoft.IdentityModel.Tokens.RsaSecurityKey(rsaParameters.Value);
-                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials (securityKey, "RS256");
-                var JWTHeader = new JwtHeader (credentials);
-                var payload = new JwtPayload { 
-                    { "iss", "commentor.dk" }, 
-                    { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
-                    { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }
-                };
+                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, algorithm);
+                var JWTHeader = new JwtHeader (credentials);                
                 var token = new JwtSecurityToken (JWTHeader, payload);
                 return token;
             }
