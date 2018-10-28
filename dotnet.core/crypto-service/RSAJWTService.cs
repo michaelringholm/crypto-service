@@ -94,26 +94,31 @@ namespace pem_console {
             return token;
         }
 
-        public static void EncryptDecrypt(string publicKey, string privateKey) {
+        public string Encrypt(string message, string publicKey) {
             byte[] encryptedMessageBytes = null;
 
             using (var rsa = RSA.Create ()) {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile (publicKey);
+                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
-                    encryptedMessageBytes = rsa.Encrypt (Encoding.UTF8.GetBytes ("Hello from dotNet.core"), RSAEncryptionPadding.Pkcs1);
-                    Console.WriteLine ($"Encrypted={Encoding.UTF8.GetString(encryptedMessageBytes)}");
+                    encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
+                    return Convert.ToBase64String(encryptedMessageBytes);
                 }
             }
+            return null;
+        }         
 
+        public string Decrypt(string encryptedMessageBase64, string privateKey) {
             using (var rsa = RSA.Create ()) {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile (privateKey);
+                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(privateKey);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
+                    var encryptedMessageBytes = Convert.FromBase64String(encryptedMessageBase64);
                     var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.Pkcs1);
-                    Console.WriteLine ($"Decrypted={Encoding.UTF8.GetString(decrypted)}");
+                    return Encoding.UTF8.GetString(decrypted);
                 }
             }
+            return null;
         }         
     }
 }
