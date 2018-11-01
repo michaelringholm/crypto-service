@@ -101,7 +101,8 @@ namespace pem_console {
                 Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
-                    encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
+                    //encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
+                    encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.OaepSHA256);
                     return Convert.ToBase64String(encryptedMessageBytes);
                 }
             }
@@ -114,7 +115,7 @@ namespace pem_console {
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
                     var encryptedMessageBytes = Convert.FromBase64String(encryptedMessageBase64);
-                    var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.Pkcs1);
+                    var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.OaepSHA256);
                     return Encoding.UTF8.GetString(decrypted);
                 }
             }
