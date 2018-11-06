@@ -3,43 +3,53 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-public class SymmetricCryptoService
+namespace crypto.symmetric
 {
-    private PaddingMode paddingMode = PaddingMode.Zeros;
-
-    public String Encrypt(string data, string password, string salt)
+    // Key and initialization vector (IV) must be the same bytes in both encrypt and decrypt
+    public static class SymmetricCryptoService
     {
-        var symAlgo = new RijndaelManaged();
-        byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
-        Rfc2898DeriveBytes theKey = new Rfc2898DeriveBytes(password, saltBytes);
-        symAlgo.Key = theKey.GetBytes(symAlgo.KeySize / 8);
-        symAlgo.IV = theKey.GetBytes(symAlgo.BlockSize / 8);
-        symAlgo.Padding = paddingMode;
-        ICryptoTransform encryptor = symAlgo.CreateEncryptor();
-        var outStream = new MemoryStream();
-        CryptoStream encryptStream = new CryptoStream(outStream, encryptor, CryptoStreamMode.Write);
-        encryptStream.Write(Encoding.UTF8.GetBytes(data), 0, data.Length);
-        encryptStream.Close();
-        var encryptedDataBase64 = Convert.ToBase64String(outStream.GetBuffer());        
-        return encryptedDataBase64;
-    }
+        public static SymmetricCryptoKey CreateSymmetricKey(string pw, string salt)
+        {
+            var rfc2898Key = new Rfc2898DeriveBytes(pw, Encoding.UTF8.GetBytes(salt));
+            var key = rfc2898Key.GetBytes(16);
+            var iv = rfc2898Key.GetBytes(16);
+            return new SymmetricCryptoKey{Key=key, IV=iv};
+        }
 
-    public String Decrypt(string encryptedDataBase64, string password, string salt)
-    {
-        var symAlgo = new RijndaelManaged();
-        byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
-        Rfc2898DeriveBytes theKey = new Rfc2898DeriveBytes(password, saltBytes);
-        symAlgo.Key = theKey.GetBytes(symAlgo.KeySize / 8);
-        symAlgo.IV = theKey.GetBytes(symAlgo.BlockSize / 8);
-        symAlgo.Padding = paddingMode;
-        ICryptoTransform decryptor = symAlgo.CreateDecryptor();
-        var encryptedBytes = Convert.FromBase64String(encryptedDataBase64);
-        var inStream = new MemoryStream(encryptedBytes);
-        CryptoStream decryptStream = new CryptoStream(inStream, decryptor, CryptoStreamMode.Read);
-        byte[] decryptedDataBytes = new byte[encryptedBytes.Length];
-        decryptStream.Read(decryptedDataBytes, 0, (int)encryptedBytes.Length);
-        decryptStream.Close();
-        var decryptedData = Encoding.UTF8.GetString(decryptedDataBytes);
-        return decryptedData;
+        public static string Encrypt(string data, byte[] key, byte[] iv)
+        {  
+            MemoryStream memStream = new MemoryStream();
+            SymmetricAlgorithm symAlgo = new RijndaelManaged();
+            symAlgo.Padding = PaddingMode.PKCS7;
+            CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateEncryptor(key, iv), CryptoStreamMode.Write);
+            StreamWriter streamWriter = new StreamWriter(cryptoStream); 
+            streamWriter.Write(data);
+            streamWriter.Flush();
+            streamWriter.Close();
+            cryptoStream.Close();
+            var encodedBytes = memStream.ToArray();
+            var encodedStringBase64 = Convert.ToBase64String(encodedBytes);
+            memStream.Close();
+
+            return encodedStringBase64;
+        }
+
+        public static string Decrypt(string encodedStringBase64, byte[] key, byte[] iv)
+        {  
+            MemoryStream memStream = new MemoryStream();
+            SymmetricAlgorithm symAlgo = new RijndaelManaged();
+            symAlgo.Padding = PaddingMode.PKCS7;
+            CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateDecryptor(key, iv), CryptoStreamMode.Write, true);
+            var encodedBytes = Convert.FromBase64String(encodedStringBase64);
+            cryptoStream.Write(encodedBytes, 0, encodedBytes.Length);
+            cryptoStream.FlushFinalBlock();
+            var decryptedBuffer = memStream.ToArray();
+            var decryptedMessage = Encoding.UTF8.GetString(decryptedBuffer);
+            memStream.Flush();
+            cryptoStream.Flush();            
+            memStream.Close();
+
+            return decryptedMessage;
+        }
     }
 }

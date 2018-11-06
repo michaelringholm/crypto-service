@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using crypto.symmetric;
 using Microsoft.IdentityModel.Tokens;
 
 namespace pem_console
@@ -17,16 +18,15 @@ namespace pem_console
             Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
             IJWTService jwtService = new RSAJWTService();
 
-            var secretData = "...my secret data...";
-            for(int i=0;i<5;i++)
-                secretData += secretData;
+            var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
+            var longSecretData = File.ReadAllText(".\\resources\\large-text.txt");
 
-            var symCrypt = new SymmetricCryptoService();
-            var symPW = "my-awesome-pw";
-            var symSalt = "my-tasty-salt";
-            var encryptedData = symCrypt.Encrypt(secretData, symPW, symSalt);
+            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey("my-awesome-pw", "my-tasty-salt");
+
+            
+            var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
             Console.WriteLine($"encryptedData:{encryptedData}");
-            var decryptedData = symCrypt.Decrypt(encryptedData, symPW, symSalt);            
+            var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);            
             Console.WriteLine($"decryptedData:{decryptedData}");
 
             var validationParameters = new TokenValidationParameters()
@@ -41,12 +41,12 @@ namespace pem_console
                     ValidateIssuer = true,
                     ValidateIssuerSigningKey = true
             };
-            
+                        
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
-                { "encrypted_pw", jwtService.Encrypt(symPW, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
-                { "encrypted_salt", jwtService.Encrypt(symSalt, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
-                { "sym_encrypted_data", symCrypt.Encrypt(secretData, symPW, symSalt) },
+                { "encrypted_key_bas64", jwtService.Encrypt(symCryptoKey.KeyBase64, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
+                { "encrypted_iv_bas64", jwtService.Encrypt(symCryptoKey.IVBase64, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
+                { "sym_encrypted_data", SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV) },                
                 { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
                 { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }
             };
@@ -61,12 +61,14 @@ namespace pem_console
             var jwtReread = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1.key","RS256", validationParameters); // Senders public key
             Console.WriteLine($"serializedJWTReread:{jwtReread}");
             var encrypteddData = jwtReread.Payload.Claims.Where(c => c.Type == "sym_encrypted_data" ).Single().Value; // Assuming that it always has data
-            var encrypteddSymPW = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_pw" ).Single().Value; // Assuming that it always has data
-            var encrypteddSymSalt = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_salt" ).Single().Value; // Assuming that it always has data
+            var encrypteddKeyBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_key_bas64" ).Single().Value; // Assuming that it always has data
+            var encrypteddIVBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_iv_bas64" ).Single().Value; // Assuming that it always has data
             // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
-            var senderSymPW = jwtService.Decrypt(encrypteddSymPW, @".\local\rsa-prv-key-set2.key"); // Receivers private key
-            var senderSymSalt = jwtService.Decrypt(encrypteddSymSalt, @".\local\rsa-prv-key-set2.key"); // Receivers private key
-            Console.WriteLine($"Decrypted data reread:{symCrypt.Decrypt(encrypteddData, senderSymPW, senderSymSalt)}"); 
+            var symKeyBase64 = jwtService.Decrypt(encrypteddKeyBase64, @".\local\rsa-prv-key-set2.key"); // Receivers private key
+            var symIVBase64 = jwtService.Decrypt(encrypteddIVBase64, @".\local\rsa-prv-key-set2.key"); // Receivers private key
+            var symKey = Convert.FromBase64String(symKeyBase64);
+            var symIV = Convert.FromBase64String(symIVBase64);
+            Console.WriteLine($"Decrypted data reread:{SymmetricCryptoService.Decrypt(encrypteddData, symKey, symIV)}"); 
             // Trying with a bad key
             var jwtRereadBad = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1-bad.key", "RS256", validationParameters);
 
