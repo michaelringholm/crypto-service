@@ -44,28 +44,28 @@ namespace pem_console
             
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
-                { "encrypted_pw", jwtService.Encrypt(symPW, @".\local\rsa-pub-key-set2.key") },
-                { "encrypted_salt", jwtService.Encrypt(symSalt, @".\local\rsa-pub-key-set2.key") },
+                { "encrypted_pw", jwtService.Encrypt(symPW, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
+                { "encrypted_salt", jwtService.Encrypt(symSalt, @".\local\rsa-pub-key-set2.key") }, // Receivers public key
                 { "sym_encrypted_data", symCrypt.Encrypt(secretData, symPW, symSalt) },
                 { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
                 { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }
             };
             // Creating signed JWT
-            var jwt = jwtService.GenerateJWTFromRSA(payload, @".\local\rsa-prv-key-set1.key", "RS256");
+            var jwt = jwtService.GenerateJWTFromRSA(payload, @".\local\rsa-prv-key-set1.key", "RS256"); // Senders private  key
             var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
             Console.WriteLine($"serializedJWT:{serializedJWT}");
             // Checking if JWT signature is valid
-            var jwtIsValid = jwtService.ValidateJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1.key", "RS256", validationParameters);
+            var jwtIsValid = jwtService.ValidateJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1.key", "RS256", validationParameters); // Senders public key
             Console.WriteLine($"JWT is valid:{jwtIsValid}");
             // Decoding if sinature is valid
-            var jwtReread = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1.key","RS256", validationParameters);
+            var jwtReread = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1.key","RS256", validationParameters); // Senders public key
             Console.WriteLine($"serializedJWTReread:{jwtReread}");
             var encrypteddData = jwtReread.Payload.Claims.Where(c => c.Type == "sym_encrypted_data" ).Single().Value; // Assuming that it always has data
             var encrypteddSymPW = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_pw" ).Single().Value; // Assuming that it always has data
             var encrypteddSymSalt = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_salt" ).Single().Value; // Assuming that it always has data
             // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
-            var senderSymPW = jwtService.Decrypt(encrypteddSymPW, @".\local\rsa-prv-key-set2.key");
-            var senderSymSalt = jwtService.Decrypt(encrypteddSymSalt, @".\local\rsa-prv-key-set2.key");
+            var senderSymPW = jwtService.Decrypt(encrypteddSymPW, @".\local\rsa-prv-key-set2.key"); // Receivers private key
+            var senderSymSalt = jwtService.Decrypt(encrypteddSymSalt, @".\local\rsa-prv-key-set2.key"); // Receivers private key
             Console.WriteLine($"Decrypted data reread:{symCrypt.Decrypt(encrypteddData, senderSymPW, senderSymSalt)}"); 
             // Trying with a bad key
             var jwtRereadBad = jwtService.ReadJWTRSA(serializedJWT, @".\local\rsa-pub-key-set1-bad.key", "RS256", validationParameters);
