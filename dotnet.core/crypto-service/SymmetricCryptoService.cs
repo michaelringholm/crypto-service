@@ -5,6 +5,8 @@ using System.Text;
 
 public class SymmetricCryptoService
 {
+    private PaddingMode paddingMode = PaddingMode.Zeros;
+
     public String Encrypt(string data, string password, string salt)
     {
         var symAlgo = new RijndaelManaged();
@@ -12,7 +14,7 @@ public class SymmetricCryptoService
         Rfc2898DeriveBytes theKey = new Rfc2898DeriveBytes(password, saltBytes);
         symAlgo.Key = theKey.GetBytes(symAlgo.KeySize / 8);
         symAlgo.IV = theKey.GetBytes(symAlgo.BlockSize / 8);
-        symAlgo.Padding = PaddingMode.None;
+        symAlgo.Padding = paddingMode;
         ICryptoTransform encryptor = symAlgo.CreateEncryptor();
         var outStream = new MemoryStream();
         CryptoStream encryptStream = new CryptoStream(outStream, encryptor, CryptoStreamMode.Write);
@@ -29,7 +31,7 @@ public class SymmetricCryptoService
         Rfc2898DeriveBytes theKey = new Rfc2898DeriveBytes(password, saltBytes);
         symAlgo.Key = theKey.GetBytes(symAlgo.KeySize / 8);
         symAlgo.IV = theKey.GetBytes(symAlgo.BlockSize / 8);
-        symAlgo.Padding = PaddingMode.None;
+        symAlgo.Padding = paddingMode;
         ICryptoTransform decryptor = symAlgo.CreateDecryptor();
         var encryptedBytes = Convert.FromBase64String(encryptedDataBase64);
         var inStream = new MemoryStream(encryptedBytes);
