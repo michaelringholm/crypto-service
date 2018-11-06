@@ -9,10 +9,10 @@ using Microsoft.IdentityModel.Tokens;
 namespace pem_console {    
     public class RSAJWTService : IJWTService {
 
-        public JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters) {
+        public JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicRSAKeyContents, string algorithm, TokenValidationParameters validationParameters) {
             var securityHandler = new JwtSecurityTokenHandler();
             var rsa = RSA.Create ();
-            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
+            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(publicRSAKeyContents);
             if (rsaParameters != null) {
                 rsa.ImportParameters (rsaParameters.Value);
 
@@ -34,11 +34,11 @@ namespace pem_console {
             
         }        
 
-        public bool ValidateJWTRSA(string serializedJWT, string publicKey, string algorithm, TokenValidationParameters validationParameters)
+        public bool ValidateJWTRSA(string serializedJWT, string publicRSAKeyContents, string algorithm, TokenValidationParameters validationParameters)
         {
             var securityHandler = new JwtSecurityTokenHandler();
             var rsa = RSA.Create ();
-            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
+            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(publicRSAKeyContents);
             if (rsaParameters != null) {
                 rsa.ImportParameters (rsaParameters.Value);
 
@@ -57,9 +57,9 @@ namespace pem_console {
             return false;
         }          
 
-        public JwtSecurityToken GenerateJWTFromRSA(JwtPayload payload, string privateKey, string algorithm) {
+        public JwtSecurityToken GenerateJWTFromRSA(JwtPayload payload, string privateRSAKeyContents, string algorithm) {
             var rsa = RSA.Create ();
-            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile (privateKey);
+            Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(privateRSAKeyContents);
             if (rsaParameters != null) {
                 rsa.ImportParameters (rsaParameters.Value);
 
@@ -94,11 +94,11 @@ namespace pem_console {
             return token;
         }
 
-        public string Encrypt(string message, string publicKey) {
+        public string Encrypt(string message, string publicRSAKeyContents) {
             byte[] encryptedMessageBytes = null;
 
             using (var rsa = RSA.Create ()) {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(publicKey);
+                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(publicRSAKeyContents);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
                     //encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
@@ -109,9 +109,9 @@ namespace pem_console {
             return null;
         }         
 
-        public string Decrypt(string encryptedMessageBase64, string privateKey) {
+        public string Decrypt(string encryptedMessageBase64, string privateRSAKeyCotents) {
             using (var rsa = RSA.Create ()) {
-                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromPemFile(privateKey);
+                Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(privateRSAKeyCotents);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
                     var encryptedMessageBytes = Convert.FromBase64String(encryptedMessageBase64);
