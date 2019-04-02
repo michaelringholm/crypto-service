@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 
-namespace pem_console
+namespace crypto_service
 {
     public interface IJWTService
     {

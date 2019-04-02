@@ -8,7 +8,7 @@ using System.Text;
 using crypto.symmetric;
 using Microsoft.IdentityModel.Tokens;
 
-namespace pem_console
+namespace crypto_service
 {
     class Program
     {

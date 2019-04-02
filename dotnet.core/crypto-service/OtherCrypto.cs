@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Net.Sockets;
 using System.Text;
 
-namespace pem_console
+namespace crypto_service
 {
     public class OtherCrypto
     {

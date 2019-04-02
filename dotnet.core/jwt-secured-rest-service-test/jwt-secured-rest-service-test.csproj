@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RootNamespace>jwt_secured_rest_service_test</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0"/>
+    <PackageReference Include="xunit" Version="2.3.1"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1"/>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\data-transport-layer\data-transport-layer.csproj"/>
+    <ProjectReference Include="..\crypto-service\crypto-service.csproj"/>
+    <ProjectReference Include="..\file-security-vault\file-security-vault.csproj"/>
+    <ProjectReference Include="..\service-layer\service-layer.csproj"/>
+  </ItemGroup>
+</Project>

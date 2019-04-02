@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace pem_console
+namespace crypto_service
 {    
     public class PEMCryptoService
     {
