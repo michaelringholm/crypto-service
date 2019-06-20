@@ -5,12 +5,12 @@
    "version": "0.2.0",
    "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "Crypto Service (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/crypto-service/bin/Debug/netcoreapp2.1/pem-console.dll",
+            "program": "${workspaceFolder}/crypto-service/bin/Debug/netcoreapp2.2/crypto-service.dll",
             "args": [],
             "cwd": "${workspaceFolder}/crypto-service",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

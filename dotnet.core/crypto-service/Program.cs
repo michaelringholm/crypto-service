@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using crypto.symmetric;
 using Microsoft.IdentityModel.Tokens;
