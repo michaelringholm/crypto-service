@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using com.opusmagus.encryption;
 using crypto_service;
 using data_transport_layer;
 using file_security_vault;

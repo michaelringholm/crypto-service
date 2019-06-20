@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 
-namespace crypto_service
+namespace com.opusmagus.encryption
 {
     public interface IJWTService
     {

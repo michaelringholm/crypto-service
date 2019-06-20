@@ -6,7 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace crypto_service {    
+namespace com.opusmagus.encryption {    
     public class RSAJWTService : IJWTService {
 
         public JwtSecurityToken ReadJWTRSA(string serializedJWT, string publicRSAKeyContents, string algorithm, TokenValidationParameters validationParameters) {

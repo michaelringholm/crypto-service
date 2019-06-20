@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using service_layer;
 
-namespace crypto_service
+namespace com.opusmagus.encryption
 {
     public static class JWTHelper
     {
