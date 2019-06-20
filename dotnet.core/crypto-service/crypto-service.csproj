@@ -2,9 +2,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RootNamespace>pem_console</RootNamespace>
+    <RootNamespace>crypto_service</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.2.4"/>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\service-layer\service-layer.csproj"/>
   </ItemGroup>
 </Project>

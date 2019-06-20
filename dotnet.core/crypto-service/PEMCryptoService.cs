@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace pem_console
+namespace crypto_service
 {    
     public class PEMCryptoService
     {
@@ -23,26 +23,26 @@ namespace pem_console
 
         private bool verbose = false;
 
-        public Nullable<RSAParameters> GetRSAProviderFromPemFile( String pemfile )
+        public Nullable<RSAParameters> GetRSAProviderFromRSAKeyContents(String rsaKeyContents)
         {
-            bool isPrivateKeyFile = true;
-            string pemstr = File.ReadAllText( pemfile ).Trim();
-            if (pemstr.StartsWith( pempubheader ) && pemstr.EndsWith( pempubfooter ))
-                isPrivateKeyFile = false;
+            bool isPrivateKey = true;
+            rsaKeyContents = rsaKeyContents.Trim();
+            if (rsaKeyContents.StartsWith( pempubheader ) && rsaKeyContents.EndsWith( pempubfooter ))
+                isPrivateKey = false;
 
             byte[] pemkey;
-            if (isPrivateKeyFile)
-                pemkey = DecodeOpenSSLPrivateKey( pemstr );
+            if (isPrivateKey)
+                pemkey = DecodeOpenSSLPrivateKey(rsaKeyContents);
             else
-                pemkey = DecodeOpenSSLPublicKey( pemstr );
+                pemkey = DecodeOpenSSLPublicKey(rsaKeyContents);
 
             if (pemkey == null)
                 return null;
 
-            if (isPrivateKeyFile)
-                return DecodeRSAPrivateKey( pemkey );
+            if (isPrivateKey)
+                return DecodeRSAPrivateKey(pemkey );
             else
-                return DecodeX509PublicKey( pemkey );
+                return DecodeX509PublicKey(pemkey);
 
         }
 
