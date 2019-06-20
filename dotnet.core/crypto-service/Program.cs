@@ -1,10 +1,6 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
 namespace pem_console
@@ -23,14 +19,14 @@ namespace pem_console
                     //SecurityKey: creds // Not needed
                     //IssuerSigningKey // This is set internally
                     //ValidAudience = "yourdomain.com" // Only used if set to true or default below
-                    ValidIssuer = "commentor.dk",
+                    ValidIssuer = "opusmagus.com",
                     ValidateLifetime = true,
                     ValidateAudience = false,
                     ValidateIssuer = true,
                     ValidateIssuerSigningKey = true
             };
             var payload = new JwtPayload { 
-                { "iss", "commentor.dk" },
+                { "iss", "opusmagus.com" },
                 { "encrypted_data", jwtService.Encrypt("My secret data...", @".\local\rsa-pub-key-set2.key") },
                 { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
                 { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }
