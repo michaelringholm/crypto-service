@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/pem-console.csproj"
+                "${workspaceFolder}/crypto-service.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

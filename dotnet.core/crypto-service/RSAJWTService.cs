@@ -120,6 +120,30 @@ namespace crypto_service {
                 }
             }
             return null;
-        }         
+        }
+
+        public string GenerateBase64Hash(string data, HashAlgorithmEnum algorithm)
+        {
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
+                    return Convert.ToBase64String(hash);
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
+        }        
+
+        public bool ValidateBase64Hash(string data, string base64Hash, HashAlgorithmEnum algorithm)
+        {
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var newHash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
+                    return base64Hash.Equals(Convert.ToBase64String(newHash));
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
+        }
     }
 }
