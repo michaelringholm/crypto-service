@@ -15,13 +15,14 @@ using crypto_service;
 
 namespace commentor.dk
 {
+    [DependencyInjection(typeof(ServiceInitializer))]
     public static class GetCarPricesService
     {
         [FunctionName("GetCarPricesService")]
         //public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest httpRequest, ILogger logger, IConfiguration config)
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest httpRequest, ILogger logger, ExecutionContext context)
         {
-            logger.LogInformation("C# HTTP trigger function processed a request.");            
+            logger.LogInformation("C# HTTP trigger function processed a request.");
             var inputData = await GetInputParameters(httpRequest);
             var config = AppConfig.Create(context);
 
