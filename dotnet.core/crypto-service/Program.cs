@@ -35,7 +35,7 @@ namespace com.opusmagus.encryption
 
         private static void AdvancedTest()
         {
-            Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/");
+            Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/ or using openssl!");
             Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
 
             RSAPublicKeySet1Contents = File.ReadAllText(@".\local\rsa-pub-key-set1.key");
