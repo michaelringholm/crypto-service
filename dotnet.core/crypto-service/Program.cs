@@ -2,13 +2,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using crypto.symmetric;
+using crypto_service;
 using Microsoft.IdentityModel.Tokens;
 
-namespace crypto_service
+namespace com.opusmagus.encryption
 {
     class Program
     {
@@ -19,6 +17,24 @@ namespace crypto_service
 
         static void Main (string[] args) {
             Console.WriteLine("Started...");
+            AdvancedTest();
+            //SimpleTest();
+            Console.WriteLine("Ended!");
+        }
+
+        private static void SimpleTest()
+        {
+            var lukesPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set1.key");
+            var lukesPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set1.key");
+            var yodasPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set2.key");
+            var yodasPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set2.key");
+            var simpleCrypto = new SimpleCrypto("my-awesome-pw", "my-tasty-salt");
+            var jwt = simpleCrypto.GenerateJWT(lukesPrivateKeyContents, yodasPublicKeyContents, "my s3cr3t data");
+            Console.WriteLine(jwt);
+        }
+
+        private static void AdvancedTest()
+        {
             Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/");
             Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
 
@@ -42,7 +58,7 @@ namespace crypto_service
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey("my-awesome-pw", "my-tasty-salt");
             var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
             Console.WriteLine($"encryptedData:{encryptedData}");
-            var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);            
+            var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);
             Console.WriteLine($"decryptedData:{decryptedData}");
 
             // This key is only known by one party "A"

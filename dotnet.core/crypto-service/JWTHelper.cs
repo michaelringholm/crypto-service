@@ -2,13 +2,12 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using crypto.symmetric;
-using crypto_service;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using service_layer;
 
-namespace crypto_service
+namespace com.opusmagus.encryption
 {
     public static class JWTHelper
     {

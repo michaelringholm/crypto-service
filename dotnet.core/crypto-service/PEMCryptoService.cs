@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace crypto_service
+namespace com.opusmagus.encryption
 {    
     public class PEMCryptoService
     {

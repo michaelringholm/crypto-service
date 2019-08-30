@@ -12,6 +12,7 @@ using business_layer;
 using file_security_vault;
 using Microsoft.Extensions.Configuration;
 using crypto_service;
+using com.opusmagus.encryption;
 
 namespace commentor.dk
 {
