@@ -32,23 +32,30 @@ public class Program {
 
     private static SimpleMessage simulateSender() throws Exception {
         JWTService jwtService = new SimpleJWTService();
-        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile("../local/prv-key-set1.pem");
-        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile("../local/pub-key-set1.pem");
+        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile("../../local/prv-key-set1.pem");
+        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile("../../local/pub-key-set1.pem");
 
-        String encryptedTextBase64 = jwtService.encryptRSA("Fem flade flødeboller", publicKey);
-        System.out.println("encryptedTextBase64 = " + encryptedTextBase64);
-        String jwtToken = createJWT(privateKey, publicKey);
+        String secretKey = "Fem flade flødeboller";
+        String iv = "";
+        String bigData = "dajsdlkjaskdj";
+        String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secretKey, publicKey);
+        String rsaEncryptedIVBase64 = jwtService.encryptRSA(iv, publicKey);
+        String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(bigData, secretKey, iv);
+        System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
+        Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);        
+        String jwtToken = JWT.create().withClaim("getEmployees", "allowed").withIssuer("commentor").sign(algorithmRS);        
         System.out.println("jwtToken = " + jwtToken);
+
         SimpleMessage simpleMessage = new SimpleMessage();
         simpleMessage.AuthorizationHeader = jwtToken;
-        simpleMessage.BodyContents = encryptedTextBase64;
+        simpleMessage.BodyContents = rijndaelEncryptedTextBase64;
         return simpleMessage;
     }
 
     private static void simulateReceiver(SimpleMessage simpleMessage) throws Exception {
         JWTService jwtService = new SimpleJWTService();
-        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile("../local/prv-key-set2.pem");
-        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile("../local/pub-key-set1.pem");        
+        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile("../../local/prv-key-set2.pem");
+        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile("../../local/pub-key-set1.pem");        
         //String decryptedMessage = SimpleCrypt.decrypt(cipherTextBase64, privateKey);            
         //System.out.println("decryptedMessage = " + decryptedMessage);
         verifyToken(privateKey, publicKey, simpleMessage.AuthorizationHeader);
@@ -69,13 +76,5 @@ public class Program {
         } catch (JWTVerificationException ex){
             ex.printStackTrace();
         }        
-    }
-
-    private static String createJWT(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
-        //Algorithm algorithm = Algorithm.RSA256(keyProvider);
-        Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);
-        //Use the Algorithm to create and verify JWTs.
-        String jwtToken = JWT.create().withClaim("getEmployees", "allowed").withIssuer("commentor").sign(algorithmRS);        
-        return jwtToken;
     }
 }
