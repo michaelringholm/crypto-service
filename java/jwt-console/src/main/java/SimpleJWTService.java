@@ -16,10 +16,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
 
-public class SimpleCrypt {
+public class SimpleJWTService implements JWTService {
 
     private static String getKey(String filename) throws IOException {
         // Read key from file
@@ -32,12 +34,13 @@ public class SimpleCrypt {
         br.close();
         return strKeyPEM;
     }
-    public static RSAPrivateKey getPrivateKey(String filename) throws IOException, GeneralSecurityException {
+
+    public RSAPrivateKey getPrivateKeyFromFile(String filename) throws IOException, GeneralSecurityException {
         String privateKeyPEM = getKey(filename);
         return getPrivateKeyFromString(privateKeyPEM);
     }
 
-    public static RSAPrivateKey getPrivateKeyFromString(String key) throws IOException, GeneralSecurityException {
+    public RSAPrivateKey getPrivateKeyFromString(String key) throws IOException, GeneralSecurityException {
         String privateKeyPEM = key;
         privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
         privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
@@ -49,12 +52,12 @@ public class SimpleCrypt {
     }
 
 
-    public static RSAPublicKey getPublicKey(String filename) throws IOException, GeneralSecurityException {
+    public RSAPublicKey getPublicKeyFromFile(String filename) throws IOException, GeneralSecurityException {
         String publicKeyPEM = getKey(filename);
         return getPublicKeyFromString(publicKeyPEM);
     }
 
-    public static RSAPublicKey getPublicKeyFromString(String key) throws IOException, GeneralSecurityException {
+    public RSAPublicKey getPublicKeyFromString(String key) throws IOException, GeneralSecurityException {
         String publicKeyPEM = key;
         publicKeyPEM = publicKeyPEM.replace("-----BEGIN PUBLIC KEY-----\n", "");
         publicKeyPEM = publicKeyPEM.replace("-----END PUBLIC KEY-----", "");
@@ -64,7 +67,7 @@ public class SimpleCrypt {
         return pubKey;
     }
 
-    public static String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
+    public String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
         Signature sign = Signature.getInstance("SHA1withRSA");
         sign.initSign(privateKey);
         sign.update(message.getBytes("UTF-8"));
@@ -72,22 +75,36 @@ public class SimpleCrypt {
     }
 
 
-    public static boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
+    public boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
         Signature sign = Signature.getInstance("SHA1withRSA");
         sign.initVerify(publicKey);
         sign.update(message.getBytes("UTF-8"));
         return sign.verify(Base64.decodeBase64(signature.getBytes("UTF-8")));
     }
 
-    public static String encrypt(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException {
+    public String encryptRSA(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
     }
 
-    public static String decrypt(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException {
+    public String decryptRSA(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return new String(cipher.doFinal(Base64.decodeBase64(cipherText)), "UTF-8");
+    }
+
+    public String encryptRijndael(String rawText, String secretKey, String iv) throws IOException, GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        //You can use ENCRYPT_MODE or DECRYPT_MODE
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
+        //byte[] ciphertext = cipher.doFinal(plaintext);   
+        //Cipher cipher = Cipher.getInstance("");
+        //cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
+    }
+
+    public String decryptRijndael(String encryptedTextBase64, String secretKey, String iv) throws IOException, GeneralSecurityException {
+        return null;
     }
 }
