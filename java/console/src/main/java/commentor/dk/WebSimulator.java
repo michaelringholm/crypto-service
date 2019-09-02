@@ -2,7 +2,6 @@ package commentor.dk;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.List;
 import java.util.Map;
 
 import com.auth0.jwt.JWT;
@@ -11,7 +10,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import java.io.File;
+//import java.io.File;
 
 public abstract class WebSimulator {
     public static void run() {
@@ -21,7 +20,7 @@ public abstract class WebSimulator {
         RSAPublicKey publicKey;
 
         try {
-            String absPath = new File(".").getAbsolutePath();
+            //String absPath = new File(".").getAbsolutePath();
             privateKey = SimpleCrypt.getPrivateKeyFromFile("./local/rsa-prv-key-set1.key");
             publicKey = SimpleCrypt.getPublicKeyFromFile("./local/rsa-pub-key-set1.key");
 
