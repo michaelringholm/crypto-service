@@ -1,3 +1,5 @@
+package commentor.dk;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -32,15 +34,21 @@ public class SimpleCrypt {
         br.close();
         return strKeyPEM;
     }
-    public static RSAPrivateKey getPrivateKey(String filename) throws IOException, GeneralSecurityException {
+    
+    public static RSAPrivateKey getPrivateKeyFromFile(String filename) throws IOException, GeneralSecurityException {
         String privateKeyPEM = getKey(filename);
         return getPrivateKeyFromString(privateKeyPEM);
     }
 
     public static RSAPrivateKey getPrivateKeyFromString(String key) throws IOException, GeneralSecurityException {
         String privateKeyPEM = key;
-        privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
-        privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
+        //String firstLine = "-----BEGIN PRIVATE KEY-----\n";
+        String firstLine = "-----BEGIN RSA PRIVATE KEY-----\n";
+        //String lastLine = "-----END PRIVATE KEY-----";
+        String lastLine = "-----END RSA PRIVATE KEY-----";
+        
+        privateKeyPEM = privateKeyPEM.replace(firstLine, "");
+        privateKeyPEM = privateKeyPEM.replace(lastLine, "");
         byte[] encoded = Base64.decodeBase64(privateKeyPEM);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
@@ -49,7 +57,7 @@ public class SimpleCrypt {
     }
 
 
-    public static RSAPublicKey getPublicKey(String filename) throws IOException, GeneralSecurityException {
+    public static RSAPublicKey getPublicKeyFromFile(String filename) throws IOException, GeneralSecurityException {
         String publicKeyPEM = getKey(filename);
         return getPublicKeyFromString(publicKeyPEM);
     }

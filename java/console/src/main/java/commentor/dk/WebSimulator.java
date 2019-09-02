@@ -1,3 +1,4 @@
+package commentor.dk;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -10,17 +11,19 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import java.io.File;
 
-public class Program {
-    public static void main(String[] args) {
+public abstract class WebSimulator {
+    public static void run() {
         System.out.println("Started...");
         String cipherTextBase64 = "rkAcJLd8Lf0MqrWWHMvEzfwjoFVaAqOL1x9t9sK9Qm297ftAMZICep+s7N4CsjG7Q1GsWy7UGlv5QncmiQawOzxvxKqT6OQZGkOEiwJCjGV5Dlckb+nnOhWrSP5fDLXSitfPU9k0I/CUsn6CEgnxatMMPWm3KXPUG49mycMzNCgUdN3HDxtNZ7FU1iFHfqIAzd0aTuJyzihZ7n1d27pTCUmHcZzW4FOzQURHt06Ca0iB2h7JnIiC1KDGW4Px/VfnKKPIAo1unn6xQKphFVtSDhxNxi/CRT2V3qchXdPen0HPb9geo1QWWtf+rsJXXaZdzt1qD4DmAYvGS0+K2P+qVw==";
         RSAPrivateKey privateKey;
         RSAPublicKey publicKey;
 
         try {
-            privateKey = SimpleCrypt.getPrivateKey("./private_key.pem");
-            publicKey = SimpleCrypt.getPublicKey("./public_key.pem");
+            String absPath = new File(".").getAbsolutePath();
+            privateKey = SimpleCrypt.getPrivateKeyFromFile("./local/rsa-prv-key-set1.key");
+            publicKey = SimpleCrypt.getPublicKeyFromFile("./local/rsa-pub-key-set1.key");
 
             String decryptedMessage = SimpleCrypt.decrypt(cipherTextBase64, privateKey);
             String encryptedTextBase64 = SimpleCrypt.encrypt("Fem flade flødeboller", publicKey);
