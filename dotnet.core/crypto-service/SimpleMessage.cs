@@ -1,12 +1,8 @@
 namespace crypto_service
 {
-    internal class SimpleMessage
+    public class SimpleMessage
     {
-        public SimpleMessage()
-        {
-        }
-
-        public string AuthorizationHeader { get; internal set; }
-        public string BodyContents { get; internal set; }
+        public string AuthorizationHeader { get; set; }
+        public string BodyContents { get; set; }
     }
 }

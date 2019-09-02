@@ -2,9 +2,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using crypto.symmetric;
 using crypto_service;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 
 namespace com.opusmagus.encryption
 {
@@ -14,10 +16,11 @@ namespace com.opusmagus.encryption
         public static string RSAPublicKeySet1Contents { get; private set; }
         public static string RSAPublicKeySet2Contents { get; private set; }
         public static string RSAPublicKeySet1BadContents { get; private set; }
+        public static readonly string LocalFileStorePath = @"C:\data\github\crypto-service\local";
 
         static void Main (string[] args) {
             Console.WriteLine("Started...");
-            AdvancedTest();
+            SimulateWebAPI();
             //SimpleTest();
             Console.WriteLine("Ended!");
         }
@@ -33,23 +36,25 @@ namespace com.opusmagus.encryption
             Console.WriteLine(jwt);
         }
 
-        private static void AdvancedTest()
+        private static void SimulateWebAPI()
         {
-            Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/ or using openssl!");
+            Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/, via 'keystore explorer' or using openssl!");
             Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
 
-            RSAPublicKeySet1Contents = File.ReadAllText(@".\local\rsa-pub-key-set1.key");
-            RSAPublicKeySet2Contents = File.ReadAllText(@".\local\rsa-pub-key-set2.key");
-            RSAPublicKeySet1BadContents = File.ReadAllText(@".\local\rsa-pub-key-set1-bad.key");
+            RSAPublicKeySet1Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set1.key");
+            RSAPublicKeySet2Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set2.key");
+            RSAPublicKeySet1BadContents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set1-bad.key");
+            Directory.CreateDirectory($@"{LocalFileStorePath}\requests");
+            Directory.CreateDirectory($@"{LocalFileStorePath}\replies");
             
-            var simpleMessage = SimulateSender();            
-            SimulateReceiver(simpleMessage);
+            SimulateSender();            
+            SimulateReceiver();
             //SimulateReceiverWithBadKey(simpleMessage);
 
             Console.WriteLine ("Ended!");
         }
 
-        private static SimpleMessage SimulateSender()
+        private static void SimulateSender()
         {
             IJWTService jwtService = new RSAJWTService();
             var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
@@ -62,7 +67,7 @@ namespace com.opusmagus.encryption
             Console.WriteLine($"decryptedData:{decryptedData}");
 
             // This key is only known by one party "A"
-            var rsaPrivateKeySet1Contents = File.ReadAllText(@".\local\rsa-prv-key-set1.key");
+            var rsaPrivateKeySet1Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set1.key");
             var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
@@ -78,14 +83,15 @@ namespace com.opusmagus.encryption
             var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
             Console.WriteLine($"serializedJWT:{serializedJWT}");            
             var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents =  SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV) };
-            return simpleMessage;
+            SendRequest(simpleMessage);
         }
 
-        private static void SimulateReceiver(SimpleMessage simpleMessage)
+        private static void SimulateReceiver()
         {
+            var simpleMessage = GetRequest();
             IJWTService jwtService = new RSAJWTService();
             // This key is only known by one party "B"
-            var rsaPrivateKeySet2Contents = File.ReadAllText(@".\local\rsa-prv-key-set2.key");
+            var rsaPrivateKeySet2Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set2.key");
             // Checking if JWT signature is valid
             var validationParameters = BuildValidationParameters();
             var receivedJWT = simpleMessage.AuthorizationHeader;
@@ -112,7 +118,39 @@ namespace com.opusmagus.encryption
             // Validate content hash
             var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
             if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm))
-                throw new Exception("The hash has been corrupted!");            
+                SendErrorReply("The hash has been corrupted!");
+            else
+                SendOKReply("JWT was valid and hash was intact!");
+        }
+
+        private static void SendOKReply(string message)
+        {
+            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.ok.json", message);
+        }
+
+        private static void SendErrorReply(string message)
+        {
+            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.err.json", message);
+        }
+
+        private static void SendRequest(SimpleMessage simpleMessage)
+        {
+            var jsonRequest = JsonConvert.SerializeObject(simpleMessage);
+            File.WriteAllText($@"{LocalFileStorePath}\requests\{Guid.NewGuid()}.json", jsonRequest);
+        }        
+
+        private static SimpleMessage GetRequest()
+        {
+            while(true) {
+                var nextRequest = Directory.GetFiles($@"{LocalFileStorePath}\requests\").FirstOrDefault();
+                if(nextRequest != null) {
+                    var jsonRequest = File.ReadAllText(nextRequest);
+                    var simpleMessage = JsonConvert.DeserializeObject<SimpleMessage>(jsonRequest);
+                    return simpleMessage;
+                }
+                else
+                    Thread.Sleep(1000);
+            }
         }
 
         private static void SimulateReceiverWithBadKey(SimpleMessage simpleMessage)
