@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using crypto.symmetric;
 using crypto_service;
@@ -48,7 +49,7 @@ namespace com.opusmagus.encryption
             Directory.CreateDirectory($@"{LocalFileStorePath}\replies");
             
             SimulateSender();            
-            SimulateReceiver();
+            //SimulateReceiver();
             //SimulateReceiverWithBadKey(simpleMessage);
 
             Console.WriteLine ("Ended!");
@@ -71,8 +72,8 @@ namespace com.opusmagus.encryption
             var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
-                { "encrypted_key_bas64", jwtService.Encrypt(symCryptoKey.KeyBase64, RSAPublicKeySet2Contents) }, // Receivers public key
-                { "encrypted_iv_bas64", jwtService.Encrypt(symCryptoKey.IVBase64, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_key_base64", jwtService.Encrypt(symCryptoKey.KeyBase64, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_iv_base64", jwtService.Encrypt(symCryptoKey.IVBase64, RSAPublicKeySet2Contents) }, // Receivers public key
                 { "content_hash_base64", contentHashBase64 },
                 { "content_hash_algorithm", HashAlgorithmEnum.SHA512.ToString() },
                 { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
@@ -125,18 +126,18 @@ namespace com.opusmagus.encryption
 
         private static void SendOKReply(string message)
         {
-            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.ok.json", message);
+            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.ok.json", message, Encoding.UTF8);
         }
 
         private static void SendErrorReply(string message)
         {
-            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.err.json", message);
+            File.WriteAllText($@"{LocalFileStorePath}\replies\{Guid.NewGuid()}.err.json", message, Encoding.UTF8);
         }
 
         private static void SendRequest(SimpleMessage simpleMessage)
         {
             var jsonRequest = JsonConvert.SerializeObject(simpleMessage);
-            File.WriteAllText($@"{LocalFileStorePath}\requests\{Guid.NewGuid()}.json", jsonRequest);
+            File.WriteAllText($@"{LocalFileStorePath}\requests\{Guid.NewGuid()}.json", jsonRequest, Encoding.UTF8);
         }        
 
         private static SimpleMessage GetRequest()
