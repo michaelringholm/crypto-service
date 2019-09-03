@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.lang.model.util.SimpleElementVisitor6;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -15,6 +17,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.Gson;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -66,21 +69,26 @@ public class Program {
         RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set2.pem"));
         RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set1.pem"));
                 
-        DecodedJWT jwt = verifyToken(privateKey, publicKey, simpleMessage.AuthorizationHeader);
+        DecodedJWT jwt = verifyToken(publicKey, simpleMessage.AuthorizationHeader);
         String encryptedkeyBase64 = jwt.getClaim("encrypted_key_base64").asString();
         String encryptedIVBase64 = jwt.getClaim("encrypted_iv_base64").asString();
         String contentHashBase64 = jwt.getClaim("content_hash_base64").asString();
         String contentHashAlgorithm = jwt.getClaim("content_hash_algorithm").asString();
         
-        String keyBase64 = jwtService.decryptRSA(encryptedkeyBase64, privateKey);
+        String secretKeyBase64 = jwtService.decryptRSA(encryptedkeyBase64, privateKey);
         String ivBase64 = jwtService.decryptRSA(encryptedIVBase64, privateKey);
-        System.out.println(String.format("keyBase64:%s", keyBase64));
-        System.out.println(String.format("ivBase64:%s", ivBase64));
-        //String decryptedMessage = jwtService.decryptRijndael(simpleMessage.BodyContents, privateKey);            
-        //System.out.println("decryptedMessage = " + decryptedMessage);
+        System.out.println(String.format("secretKeyBase64 = %s", secretKeyBase64));
+        System.out.println(String.format("ivBase64 = %s [%d] bytes long", ivBase64, Base64.decodeBase64(ivBase64).length));
+        
+        if(simpleMessage.BodyContents != null && simpleMessage.BodyContents.length() > 100)
+            System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents.substring(0, 100)));
+        else
+            System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents));
+        String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), Base64.decodeBase64(secretKeyBase64), Base64.decodeBase64(ivBase64));
+        System.out.println("decryptedMessage = " + decryptedMessage);
     }  
 
-    private static DecodedJWT verifyToken(RSAPrivateKey privateKey, RSAPublicKey publicKey, String jwtToken) {
+    private static DecodedJWT verifyToken(RSAPublicKey publicKey, String jwtToken) {
         try {
             Algorithm algorithm = Algorithm.RSA256(publicKey, null);
             JWTVerifier verifier = JWT.require(algorithm).withIssuer("commentor.dk").build(); //Reusable verifier instance

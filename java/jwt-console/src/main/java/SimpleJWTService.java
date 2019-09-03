@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -79,7 +80,7 @@ public class SimpleJWTService implements JWTService {
         Signature sign = Signature.getInstance("SHA1withRSA");
         sign.initVerify(publicKey);
         sign.update(message.getBytes("UTF-8"));
-        return sign.verify(Base64.decodeBase64(signature.getBytes("UTF-8")));
+        return sign.verify(Base64.decodeBase64(signature));
     }
 
     public String encryptRSA(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException {
@@ -89,22 +90,43 @@ public class SimpleJWTService implements JWTService {
     }
 
     public String decryptRSA(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance("RSA"); // Seems to be defaulting to PCKS1
+        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+        //Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA-256AndMGF1Padding");
+        //Cipher cipher = Cipher.getInstance("RSA/None/PKCS1Padding");
+        //new AlgorithmParameters();
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return new String(cipher.doFinal(Base64.decodeBase64(cipherText)), "UTF-8");
     }
 
-    public String encryptRijndael(String rawText, String secretKey, String iv) throws IOException, GeneralSecurityException {
+    public String encryptRijndael(String rawText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
+        //Cipher cipher = Cipher.getInstance("RSA");
+        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS7Padding");
+        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         //You can use ENCRYPT_MODE or DECRYPT_MODE
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
+        //cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
         //byte[] ciphertext = cipher.doFinal(plaintext);   
         //Cipher cipher = Cipher.getInstance("");
         //cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
+        //return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
+        return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes()));
     }
 
-    public String decryptRijndael(String encryptedTextBase64, String secretKey, String iv) throws IOException, GeneralSecurityException {
-        return null;
+    public String decryptRijndael(byte[] encryptedText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
+        //Cipher cipher = Cipher.getInstance("RSA");
+        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");        
+        //You can use ENCRYPT_MODE or DECRYPT_MODE
+        //cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
+        //byte[] ciphertext = cipher.doFinal(plaintext);   
+        //Cipher cipher = Cipher.getInstance("");
+        //cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        //return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
+        return new String(cipher.doFinal(encryptedText));
     }
 }

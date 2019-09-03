@@ -20,7 +20,9 @@ namespace crypto.symmetric
         {  
             MemoryStream memStream = new MemoryStream();
             SymmetricAlgorithm symAlgo = new RijndaelManaged();
+            var len = symAlgo.IV.Length;
             symAlgo.Padding = PaddingMode.PKCS7;
+            //symAlgo.Padding = RSAEncryptionPadding.Pkcs1;
             CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateEncryptor(key, iv), CryptoStreamMode.Write);
             StreamWriter streamWriter = new StreamWriter(cryptoStream); 
             streamWriter.Write(data);
@@ -38,6 +40,7 @@ namespace crypto.symmetric
         {  
             MemoryStream memStream = new MemoryStream();
             SymmetricAlgorithm symAlgo = new RijndaelManaged();
+            //symAlgo.Padding = PaddingMode.PKCS7;
             symAlgo.Padding = PaddingMode.PKCS7;
             CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateDecryptor(key, iv), CryptoStreamMode.Write, true);
             var encodedBytes = Convert.FromBase64String(encodedStringBase64);

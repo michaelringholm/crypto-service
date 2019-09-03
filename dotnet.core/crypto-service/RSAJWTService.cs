@@ -96,13 +96,12 @@ namespace com.opusmagus.encryption {
 
         public string Encrypt(string message, string publicRSAKeyContents) {
             byte[] encryptedMessageBytes = null;
-
             using (var rsa = RSA.Create ()) {
                 Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(publicRSAKeyContents);
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
-                    //encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
-                    encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.OaepSHA256);
+                    encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.Pkcs1);
+                    //encryptedMessageBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(message), RSAEncryptionPadding.OaepSHA256);
                     return Convert.ToBase64String(encryptedMessageBytes);
                 }
             }

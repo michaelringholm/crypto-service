@@ -76,8 +76,8 @@ namespace com.opusmagus.encryption
                 { "encrypted_iv_base64", jwtService.Encrypt(symCryptoKey.IVBase64, RSAPublicKeySet2Contents) }, // Receivers public key
                 { "content_hash_base64", contentHashBase64 },
                 { "content_hash_algorithm", HashAlgorithmEnum.SHA512.ToString() },
-                { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
-                { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }
+                { "exp", (Int32) (DateTime.UtcNow.AddHours(1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
+                { "iat", (Int32) (DateTime.UtcNow.Subtract(new DateTime (1970, 1, 1))).TotalSeconds }
             };
             // Creating signed JWT
             var jwt = jwtService.GenerateJWTFromRSA(payload, rsaPrivateKeySet1Contents, "RS256"); // Senders private  key
