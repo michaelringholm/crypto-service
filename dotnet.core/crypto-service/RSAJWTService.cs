@@ -37,7 +37,7 @@ namespace com.opusmagus.encryption {
         public bool ValidateJWTRSA(string serializedJWT, string publicRSAKeyContents, string algorithm, TokenValidationParameters validationParameters)
         {
             var securityHandler = new JwtSecurityTokenHandler();
-            var rsa = RSA.Create ();
+            var rsa = RSA.Create();
             Nullable<RSAParameters> rsaParameters = new PEMCryptoService().GetRSAProviderFromRSAKeyContents(publicRSAKeyContents);
             if (rsaParameters != null) {
                 rsa.ImportParameters (rsaParameters.Value);
@@ -114,7 +114,8 @@ namespace com.opusmagus.encryption {
                 if (rsaParameters != null) {
                     rsa.ImportParameters (rsaParameters.Value);
                     var encryptedMessageBytes = Convert.FromBase64String(encryptedMessageBase64);
-                    var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.OaepSHA256);
+                    //var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.OaepSHA256);
+                    var decrypted = rsa.Decrypt (encryptedMessageBytes, RSAEncryptionPadding.Pkcs1);
                     return Encoding.UTF8.GetString(decrypted);
                 }
             }

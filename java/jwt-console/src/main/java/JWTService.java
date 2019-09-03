@@ -16,6 +16,7 @@ public interface JWTService {
     public boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException;
     public String encryptRSA(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException;
     public String decryptRSA(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException;
-    public String encryptRijndael(String rawText, String secretKey, String iv) throws IOException, GeneralSecurityException;
+    public String encryptRijndael(String rawText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException;
     public String decryptRijndael(byte[] encryptedTextBase64, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException;
+    public String generateBase64Hash(String text, String salt) throws Exception;
 }

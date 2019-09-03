@@ -21,38 +21,28 @@ namespace com.opusmagus.encryption
 
         static void Main (string[] args) {
             Console.WriteLine("Started...");
-            SimulateWebAPI();
-            //SimpleTest();
-            Console.WriteLine("Ended!");
-        }
-
-        private static void SimpleTest()
-        {
-            var lukesPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set1.key");
-            var lukesPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set1.key");
-            var yodasPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set2.key");
-            var yodasPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set2.key");
-            var simpleCrypto = new SimpleCrypto("my-awesome-pw", "my-tasty-salt");
-            var jwt = simpleCrypto.GenerateJWT(lukesPrivateKeyContents, yodasPublicKeyContents, "my s3cr3t data");
-            Console.WriteLine(jwt);
-        }
-
-        private static void SimulateWebAPI()
-        {
             Console.WriteLine("Genereate your keys e.g. via this online tool for testing http://travistidwell.com/jsencrypt/demo/, via 'keystore explorer' or using openssl!");
             Console.WriteLine("Verify your tokens and signature via https://jwt.io/");
-
             RSAPublicKeySet1Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set1.key");
             RSAPublicKeySet2Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set2.key");
             RSAPublicKeySet1BadContents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-pub-key-set1-bad.key");
             Directory.CreateDirectory($@"{LocalFileStorePath}\requests");
             Directory.CreateDirectory($@"{LocalFileStorePath}\replies");
             
-            SimulateSender();            
-            //SimulateReceiver();
-            //SimulateReceiverWithBadKey(simpleMessage);
-
-            Console.WriteLine ("Ended!");
+            Console.WriteLine("Welcome to the Web API Simulator, what would you like to do?");
+            Console.WriteLine("1. Simulate Sender");
+            Console.WriteLine("2. Simulate Receiver");
+            Console.WriteLine("3. Simulate Receiver With Bad Key");
+            Console.WriteLine("4. Exit");
+            int keyRead = Console.In.Read();
+            switch(keyRead) {
+                case '1' : SimulateSender(); break;
+                case '2' : SimulateReceiver(); break;
+                case '3' : SimulateReceiverWithBadKey(); break;
+                case '4' : Console.WriteLine("Exiting!"); break;
+                default : Console.Error.WriteLine("Unknown choice!"); break;
+            }       
+            Console.WriteLine("Ended!");
         }
 
         private static void SimulateSender()
@@ -105,11 +95,13 @@ namespace com.opusmagus.encryption
             Console.WriteLine($"serializedJWTReread:{jwtReread}");
             var contentHashBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_base64" ).Single().Value; // Assuming that it always has data
             var contentHashAlgorithm = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_algorithm" ).Single().Value; // Assuming that it always has data
-            var encrypteddKeyBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_key_bas64" ).Single().Value; // Assuming that it always has data
-            var encrypteddIVBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_iv_bas64" ).Single().Value; // Assuming that it always has data
+            var encryptedKeyBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_key_base64" ).Single().Value; // Assuming that it always has data
+            var encrypteddIVBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_iv_base64" ).Single().Value; // Assuming that it always has data
+            Console.WriteLine($"encryptedKeyBase64={encryptedKeyBase64}");
 
             // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
-            var symKeyBase64 = jwtService.Decrypt(encrypteddKeyBase64, rsaPrivateKeySet2Contents); // Receivers private key
+            var symKeyBase64 = jwtService.Decrypt(encryptedKeyBase64, rsaPrivateKeySet2Contents); // Receivers private key
+            Console.WriteLine($"symKeyBase64={symKeyBase64}");
             var symIVBase64 = jwtService.Decrypt(encrypteddIVBase64, rsaPrivateKeySet2Contents); // Receivers private key
             var symKey = Convert.FromBase64String(symKeyBase64);
             var symIV = Convert.FromBase64String(symIVBase64);
@@ -149,13 +141,27 @@ namespace com.opusmagus.encryption
                     var simpleMessage = JsonConvert.DeserializeObject<SimpleMessage>(jsonRequest);
                     return simpleMessage;
                 }
-                else
-                    Thread.Sleep(1000);
+                else {
+                    Console.WriteLine("No messages found, sleeping for 5 seconds...");
+                    Thread.Sleep(5000);
+                }
             }
         }
 
-        private static void SimulateReceiverWithBadKey(SimpleMessage simpleMessage)
+        private static void SimpleTest()
         {
+            var lukesPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set1.key");
+            var lukesPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set1.key");
+            var yodasPrivateKeyContents = File.ReadAllText(@".\local\rsa-prv-key-set2.key");
+            var yodasPublicKeyContents = File.ReadAllText(@".\local\rsa-pub-key-set2.key");
+            var simpleCrypto = new SimpleCrypto("my-awesome-pw", "my-tasty-salt");
+            var jwt = simpleCrypto.GenerateJWT(lukesPrivateKeyContents, yodasPublicKeyContents, "my s3cr3t data");
+            Console.WriteLine(jwt);
+        }        
+
+        private static void SimulateReceiverWithBadKey()
+        {
+            var simpleMessage = GetRequest();
             IJWTService jwtService = new RSAJWTService();
             // Trying with a bad key
             var jwtRereadBad = jwtService.ReadJWTRSA(simpleMessage.AuthorizationHeader, RSAPublicKeySet1BadContents, "RS256", BuildValidationParameters());

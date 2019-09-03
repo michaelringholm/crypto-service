@@ -2,10 +2,11 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.security.AlgorithmParameters;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -25,7 +26,6 @@ import org.apache.commons.codec.binary.Base64;
 public class SimpleJWTService implements JWTService {
 
     private static String getKey(String filename) throws IOException {
-        // Read key from file
         String strKeyPEM = "";
         BufferedReader br = new BufferedReader(new FileReader(filename));
         String line;
@@ -52,7 +52,6 @@ public class SimpleJWTService implements JWTService {
         return privKey;
     }
 
-
     public RSAPublicKey getPublicKeyFromFile(String filename) throws IOException, GeneralSecurityException {
         String publicKeyPEM = getKey(filename);
         return getPublicKeyFromString(publicKeyPEM);
@@ -75,7 +74,6 @@ public class SimpleJWTService implements JWTService {
         return new String(Base64.encodeBase64(sign.sign()), "UTF-8");
     }
 
-
     public boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
         Signature sign = Signature.getInstance("SHA1withRSA");
         sign.initVerify(publicKey);
@@ -93,40 +91,30 @@ public class SimpleJWTService implements JWTService {
         Cipher cipher = Cipher.getInstance("RSA"); // Seems to be defaulting to PCKS1
         //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         //Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA-256AndMGF1Padding");
-        //Cipher cipher = Cipher.getInstance("RSA/None/PKCS1Padding");
-        //new AlgorithmParameters();
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return new String(cipher.doFinal(Base64.decodeBase64(cipherText)), "UTF-8");
     }
 
     public String encryptRijndael(String rawText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
-        //Cipher cipher = Cipher.getInstance("RSA");
-        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS7Padding");
-        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        //You can use ENCRYPT_MODE or DECRYPT_MODE
-        //cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
-        //byte[] ciphertext = cipher.doFinal(plaintext);   
-        //Cipher cipher = Cipher.getInstance("");
-        //cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        //return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
         return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes()));
     }
 
     public String decryptRijndael(byte[] encryptedText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
-        //Cipher cipher = Cipher.getInstance("RSA");
-        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        //Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");        
-        //You can use ENCRYPT_MODE or DECRYPT_MODE
-        //cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey.getBytes("UTF-8"), "AES"), new IvParameterSpec(iv.getBytes("UTF-8")));
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
-        //byte[] ciphertext = cipher.doFinal(plaintext);   
-        //Cipher cipher = Cipher.getInstance("");
-        //cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        //return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
         return new String(cipher.doFinal(encryptedText));
+    }
+
+    public String generateBase64Hash(String text, String salt) throws Exception {
+        String generatedPassword = null;
+        MessageDigest md = MessageDigest.getInstance("SHA-512");
+        if(salt != null) md.update(salt.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = md.digest(text.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for(int i=0; i< bytes.length ;i++) sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));        
+        generatedPassword = sb.toString();
+        return Base64.encodeBase64String(generatedPassword.getBytes());
     }
 }
