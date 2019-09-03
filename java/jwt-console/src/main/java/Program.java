@@ -8,8 +8,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.lang.model.util.SimpleElementVisitor6;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;

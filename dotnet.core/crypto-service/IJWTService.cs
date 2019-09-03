@@ -12,6 +12,8 @@ namespace com.opusmagus.encryption
         string Encrypt(string message, string publicKey);
         string Decrypt(string encryptedMessage, string privateKey);
         string GenerateBase64Hash(string data, HashAlgorithmEnum algorithm);
+        string GenerateHexHash(string data, HashAlgorithmEnum algorithm);
         bool ValidateBase64Hash(string data, string base64Hash, HashAlgorithmEnum algorithm);
+        bool ValidateHexHash(string data, string hexHash, HashAlgorithmEnum algorithm);
     }
 }

@@ -115,9 +115,12 @@ namespace com.opusmagus.encryption
             if(decryptedContent != null && decryptedContent.Length > 100) Console.WriteLine($"decryptedContent={decryptedContent.Substring(0,100)}");            
             else Console.WriteLine($"decryptedContent (chunked)={decryptedContent}");
             Console.WriteLine($"contentHashBase64={contentHashBase64}");
+            string hexContentHash = Encoding.UTF8.GetString(Convert.FromBase64String(contentHashBase64));
+            Console.WriteLine($"contentHashHex={hexContentHash}");
             // Validate content hash
             var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
-            if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm)) {
+            //if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm)) {
+            if(!jwtService.ValidateHexHash(decryptedContent, hexContentHash, hashAlgorithm)) {
                 Console.Error.WriteLine("The content hash has been corrupted, do not continue to use these data!");
                 SendErrorReply("The content hash has been corrupted, do not continue to use these data!");
             }

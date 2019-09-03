@@ -122,6 +122,19 @@ namespace com.opusmagus.encryption {
             return null;
         }
 
+        public string GenerateHexHash(string data, HashAlgorithmEnum algorithm)
+        {
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
+                    string hexHash = BitConverter.ToString(hash).Replace("-", string.Empty);
+                    return hexHash;
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
+        }        
+
         public string GenerateBase64Hash(string data, HashAlgorithmEnum algorithm)
         {
             if(algorithm == HashAlgorithmEnum.SHA512) {
@@ -145,5 +158,19 @@ namespace com.opusmagus.encryption {
             }
             throw new Exception("Unsupported hashing algorithm!");
         }
+
+        public bool ValidateHexHash(string data, string hexHash, HashAlgorithmEnum algorithm)
+        {
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var newHash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
+                    string newHexHash = BitConverter.ToString(newHash).Replace("-", string.Empty);
+                    Console.WriteLine($"newHexHash={newHexHash}");
+                    return hexHash.ToUpper().Equals(newHexHash.ToUpper());
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
+        }        
     }
 }
