@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -22,6 +23,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class SimpleJWTService implements JWTService {
 
@@ -107,14 +109,23 @@ public class SimpleJWTService implements JWTService {
         return new String(cipher.doFinal(encryptedText));
     }
 
-    public String generateBase64Hash(String text, String salt) throws Exception {
-        String generatedPassword = null;
-        MessageDigest md = MessageDigest.getInstance("SHA-512");
-        if(salt != null) md.update(salt.getBytes(StandardCharsets.UTF_8));
-        byte[] bytes = md.digest(text.getBytes(StandardCharsets.UTF_8));
+    public String generateBase64Hash(String text) throws Exception {
+        /*MessageDigest messageDigest = MessageDigest.getInstance("SHA-512");
+        if(salt != null) messageDigest.update(salt.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = messageDigest.digest(text.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         for(int i=0; i< bytes.length ;i++) sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));        
-        generatedPassword = sb.toString();
-        return Base64.encodeBase64String(generatedPassword.getBytes());
+        sha512Hash = sb.toString();*/
+
+        /*MessageDigest digest = MessageDigest.getInstance("SHA-512");
+	    digest.reset();
+	    digest.update(text.getBytes("utf8"));
+	    sha512Hash = String.format("%0128x", new BigInteger(1, digest.digest()));        
+        System.out.println("sha512Hash=" + sha512Hash);
+        return Base64.encodeBase64String(sha512Hash.getBytes());*/
+
+        String sha512Hex = DigestUtils.sha512Hex(text);
+        System.out.println("sha512Hex=" + sha512Hex);
+        return Base64.encodeBase64String(sha512Hex.getBytes());
     }
 }

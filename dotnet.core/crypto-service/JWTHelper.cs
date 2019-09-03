@@ -11,12 +11,12 @@ namespace com.opusmagus.encryption
 {
     public static class JWTHelper
     {
-        public static String ToJWTBase64(dynamic data, ILogger logger, ISecurityVault securityVault, String issuer, String symPWSecretName, String symSaltSecretName, String senderPrivateKeyName, String receiverPublicKeyName)
+        public static String ToJWTBase64(dynamic data, ILogger logger, ISecurityVault securityVault, String issuer, String secret, String salt, String senderPrivateKeyName, String receiverPublicKeyName)
         {
             IJWTService jwtService = new RSAJWTService();
 
             var longSecretData = JsonConvert.SerializeObject(data);
-            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(securityVault.GetSecret(symPWSecretName), securityVault.GetSecret(symSaltSecretName));
+            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(securityVault.GetSecret(secret), securityVault.GetSecret(salt));
             var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
             logger.LogInformation($"encryptedData:{encryptedData}");
             //var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);            
@@ -28,8 +28,8 @@ namespace com.opusmagus.encryption
                         
             var payload = new JwtPayload { 
                 { "iss", issuer },
-                { "encrypted_key_bas64", jwtService.Encrypt(symCryptoKey.KeyBase64, rsaPublicKeySet2Contents) }, // Receivers public key
-                { "encrypted_iv_bas64", jwtService.Encrypt(symCryptoKey.IVBase64, rsaPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_key_bas64", jwtService.Encrypt(secret, rsaPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_iv_bas64", jwtService.Encrypt(salt, rsaPublicKeySet2Contents) }, // Receivers public key
                 { "sym_encrypted_data", SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV) }, // These data can be large
                 { "exp", (Int32) (DateTime.UtcNow.AddHours (1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
                 { "iat", (Int32) (DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalSeconds }

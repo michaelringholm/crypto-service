@@ -18,5 +18,5 @@ public interface JWTService {
     public String decryptRSA(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException;
     public String encryptRijndael(String rawText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException;
     public String decryptRijndael(byte[] encryptedTextBase64, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException;
-    public String generateBase64Hash(String text, String salt) throws Exception;
+    public String generateBase64Hash(String text) throws Exception;
 }

@@ -48,10 +48,12 @@ namespace com.opusmagus.encryption
         private static void SimulateSender()
         {
             IJWTService jwtService = new RSAJWTService();
-            var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
+            //var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
             var longSecretData = File.ReadAllText(".\\resources\\large-text.txt");
 
-            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey("my-awesome-pw", "my-tasty-salt");
+            var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
+            var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
+            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
             var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
             Console.WriteLine($"encryptedData:{encryptedData}");
             var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);
@@ -62,8 +64,8 @@ namespace com.opusmagus.encryption
             var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
-                { "encrypted_key_base64", jwtService.Encrypt(symCryptoKey.KeyBase64, RSAPublicKeySet2Contents) }, // Receivers public key
-                { "encrypted_iv_base64", jwtService.Encrypt(symCryptoKey.IVBase64, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_key_base64", jwtService.Encrypt(secret, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_iv_base64", jwtService.Encrypt(salt, RSAPublicKeySet2Contents) }, // Receivers public key
                 { "content_hash_base64", contentHashBase64 },
                 { "content_hash_algorithm", HashAlgorithmEnum.SHA512.ToString() },
                 { "exp", (Int32) (DateTime.UtcNow.AddHours(1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
@@ -72,8 +74,8 @@ namespace com.opusmagus.encryption
             // Creating signed JWT
             var jwt = jwtService.GenerateJWTFromRSA(payload, rsaPrivateKeySet1Contents, "RS256"); // Senders private  key
             var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
-            Console.WriteLine($"serializedJWT:{serializedJWT}");            
-            var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents =  SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV) };
+            Console.WriteLine($"serializedJWT:{serializedJWT}");
+            var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents =  SymmetricCryptoService.Encrypt(longSecretData, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt)) };
             SendRequest(simpleMessage);
         }
 
@@ -100,20 +102,29 @@ namespace com.opusmagus.encryption
             Console.WriteLine($"encryptedKeyBase64={encryptedKeyBase64}");
 
             // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
-            var symKeyBase64 = jwtService.Decrypt(encryptedKeyBase64, rsaPrivateKeySet2Contents); // Receivers private key
-            Console.WriteLine($"symKeyBase64={symKeyBase64}");
-            var symIVBase64 = jwtService.Decrypt(encrypteddIVBase64, rsaPrivateKeySet2Contents); // Receivers private key
-            var symKey = Convert.FromBase64String(symKeyBase64);
-            var symIV = Convert.FromBase64String(symIVBase64);
-            var decryptedContent = SymmetricCryptoService.Decrypt(receivedContent, symKey, symIV);
-            Console.WriteLine($"Decrypted data reread:{decryptedContent}");
-
+            var secret = jwtService.Decrypt(encryptedKeyBase64, rsaPrivateKeySet2Contents); // Receivers private key            
+            var salt = jwtService.Decrypt(encrypteddIVBase64, rsaPrivateKeySet2Contents); // Receivers private key
+            Console.WriteLine($"secret={secret}");
+            Console.WriteLine($"salt={salt}");
+            //var symKey = Convert.FromBase64String(symKeyBase64);
+            //var symIV = Convert.FromBase64String(symIVBase64);            
+            //var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
+            Console.WriteLine($"secret.Length={secret.Length}");
+            var decryptedContent = SymmetricCryptoService.Decrypt(receivedContent, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
+            //var decryptedContent = SymmetricCryptoService.Decrypt(receivedContent, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(iv));
+            if(decryptedContent != null && decryptedContent.Length > 100) Console.WriteLine($"decryptedContent={decryptedContent.Substring(0,100)}");            
+            else Console.WriteLine($"decryptedContent (chunked)={decryptedContent}");
+            Console.WriteLine($"contentHashBase64={contentHashBase64}");
             // Validate content hash
             var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
-            if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm))
-                SendErrorReply("The hash has been corrupted!");
-            else
+            if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm)) {
+                Console.Error.WriteLine("The content hash has been corrupted, do not continue to use these data!");
+                SendErrorReply("The content hash has been corrupted, do not continue to use these data!");
+            }
+            else {
+                Console.WriteLine("JWT was valid and hash was intact!");
                 SendOKReply("JWT was valid and hash was intact!");
+            }
         }
 
         private static void SendOKReply(string message)

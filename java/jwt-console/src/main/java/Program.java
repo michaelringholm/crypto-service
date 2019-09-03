@@ -57,18 +57,19 @@ public class Program {
         RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set1.pem"));
         RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set2.pem"));
 
-        String secretKey = "Fem flade flødeboller 12"; // Must be divisable by 8
+        String secretKey = "pyramids are old"; // Must be 16 bytes to make .Net happy
         String iv = "this is salty bz"; // Must be 16 bytes
         String longSecretData = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "data/large-text2.txt")), Charset.forName("UTF-8"));
+        System.out.println("longSecretData = " + longSecretData);
         String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secretKey, publicKey);
         String rsaEncryptedIVBase64 = jwtService.encryptRSA(iv, publicKey);
         String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(longSecretData, secretKey.getBytes(), iv.getBytes());
         System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
-        String contentHashBase64 = jwtService.generateBase64Hash(longSecretData, null);
+        String contentHashBase64 = jwtService.generateBase64Hash(longSecretData);
         System.out.println("contentHashBase64 = " + contentHashBase64);
         Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);        
         JWTCreator.Builder jwtBuilder = JWT.create().withIssuer("commentor.dk").withExpiresAt(DateUtils.addHours(new Date(), 1)).withIssuedAt(new Date());
-        jwtBuilder.withClaim("encrypted_key_base64", rsaEncryptedSecretBase64).withClaim("encrypted_iv_base64", rsaEncryptedIVBase64).withClaim("content_hash_base64", contentHashBase64).withClaim("content_hash_algorithm", "SHA-512");
+        jwtBuilder.withClaim("encrypted_key_base64", rsaEncryptedSecretBase64).withClaim("encrypted_iv_base64", rsaEncryptedIVBase64).withClaim("content_hash_base64", contentHashBase64).withClaim("content_hash_algorithm", "SHA512");
         String jwtToken = jwtBuilder.sign(algorithmRS);
         System.out.println("jwtToken = " + jwtToken);
 
@@ -90,31 +91,31 @@ public class Program {
         String contentHashBase64 = jwt.getClaim("content_hash_base64").asString();
         String contentHashAlgorithm = jwt.getClaim("content_hash_algorithm").asString();
         
-        String secretKeyBase64 = jwtService.decryptRSA(encryptedkeyBase64, privateKey);
-        String ivBase64 = jwtService.decryptRSA(encryptedIVBase64, privateKey);
-        System.out.println(String.format("secretKeyBase64 = %s", secretKeyBase64));
-        System.out.println(String.format("ivBase64 = %s [%d] bytes long", ivBase64, Base64.decodeBase64(ivBase64).length));
+        String secretKey = jwtService.decryptRSA(encryptedkeyBase64, privateKey);
+        String iv = jwtService.decryptRSA(encryptedIVBase64, privateKey);
+        System.out.println(String.format("secretKey = %s", secretKey));
+        System.out.println(String.format("ivBase64 = %s [%d] bytes long", iv, iv.getBytes().length));
         
         if(simpleMessage.BodyContents != null && simpleMessage.BodyContents.length() > 100)
             System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents.substring(0, 100)));
         else
             System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents));
-        String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), Base64.decodeBase64(secretKeyBase64), Base64.decodeBase64(ivBase64));
+        String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), secretKey.getBytes(), iv.getBytes());
         System.out.println("decryptedMessage = " + decryptedMessage);
     }  
 
     private static DecodedJWT verifyToken(RSAPublicKey publicKey, String jwtToken) {
         try {
             Algorithm algorithm = Algorithm.RSA256(publicKey, null);
-            JWTVerifier verifier = JWT.require(algorithm).withIssuer("commentor.dk").build(); //Reusable verifier instance
+            JWTVerifier verifier = JWT.require(algorithm).build(); //.withIssuer("commentor.dk").build(); //Reusable verifier instance
             DecodedJWT jwt = verifier.verify(jwtToken);
-            if(jwt != null)
-                System.out.println("Signature OK!");
-                
+            if(jwt != null) System.out.println("JWS Signature OK!");
+            System.out.println("Listing JWT payload...");                
             Map<String, Claim> claimsMap = jwt.getClaims();
-            for (String key : claimsMap.keySet()) {
+            for (String key : claimsMap.keySet())                
                 System.out.println(key + " = " + claimsMap.get(key).asString());
-            }
+            System.out.println("exp="+jwt.getExpiresAt());
+            System.out.println("iat="+jwt.getIssuedAt());
             return jwt;
         } catch (JWTVerificationException ex){
             ex.printStackTrace();

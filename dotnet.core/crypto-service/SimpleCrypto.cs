@@ -13,13 +13,17 @@ namespace com.opusmagus.encryption {
         public String Issuer {get;set;}
         public DateTime ExpirationDate { get; set; }
         private SymmetricCryptoKey symCryptoKey;
+        private string secret;
+        private string salt;
 
-        public SimpleCrypto(string symmetricPW, string salt) {
+        public SimpleCrypto(string secret, string salt) {
+            this.secret = secret;
+            this.salt = salt;
             JWTService = new RSAJWTService();
             Algorithm = AlgorithmEnum.RSA256;
             Issuer = "opusmagus.com";
             ExpirationDate = new DateTime (1970, 1, 1);
-            symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(symmetricPW, salt);
+            symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
         }
         
         public string GenerateJWT(string writersPrivateKeyContents, string readersPublicKeyContents, string data) {            
@@ -32,8 +36,8 @@ namespace com.opusmagus.encryption {
         {
             var payload = new JwtPayload { 
                 { "iss", Issuer },
-                { "encrypted_key_base64", JWTService.Encrypt(symCryptoKey.KeyBase64, readersPublicKeyContents) }, // Receivers public key
-                { "encrypted_iv_base64", JWTService.Encrypt(symCryptoKey.IVBase64, readersPublicKeyContents) }, // Receivers public key
+                { "encrypted_key_base64", JWTService.Encrypt(secret, readersPublicKeyContents) }, // Receivers public key
+                { "encrypted_iv_base64", JWTService.Encrypt(salt, readersPublicKeyContents) }, // Receivers public key
                 { "sym_encrypted_data", SymmetricCryptoService.Encrypt(data, symCryptoKey.Key, symCryptoKey.IV) }, // These data can be large
                 { "exp", (Int32) (DateTime.UtcNow.AddHours(1).Subtract(ExpirationDate)).TotalSeconds }, // Expiration
                 { "iat", (Int32) (DateTime.UtcNow.Subtract(ExpirationDate)).TotalSeconds } // Issued At
