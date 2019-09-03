@@ -60,12 +60,14 @@ public class Program {
         String secretKey = "pyramids are old"; // Must be 16 bytes to make .Net happy
         String iv = "this is salty bz"; // Must be 16 bytes
         String longSecretData = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "data/large-text2.txt")), Charset.forName("UTF-8"));
-        System.out.println("longSecretData = " + longSecretData);
+        if(longSecretData != null && longSecretData.length() > 100) System.out.println("longSecretData = " + longSecretData.substring(0,100));
+        else System.out.println("longSecretData = " + longSecretData);
         String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secretKey, publicKey);
         String rsaEncryptedIVBase64 = jwtService.encryptRSA(iv, publicKey);
         String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(longSecretData, secretKey.getBytes(), iv.getBytes());
-        System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
-        String contentHashBase64 = jwtService.generateBase64Hash(longSecretData);
+        if(rijndaelEncryptedTextBase64 != null && rijndaelEncryptedTextBase64.length() > 100) System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64.substring(0,100));
+        else System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
+        String contentHashBase64 = jwtService.generateBase64Hash(longSecretData, JWTService.HashAlgorithEnum.SHA512);
         System.out.println("contentHashBase64 = " + contentHashBase64);
         Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);        
         JWTCreator.Builder jwtBuilder = JWT.create().withIssuer("commentor.dk").withExpiresAt(DateUtils.addHours(new Date(), 1)).withIssuedAt(new Date());
@@ -101,8 +103,24 @@ public class Program {
         else
             System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents));
         String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), secretKey.getBytes(), iv.getBytes());
-        System.out.println("decryptedMessage = " + decryptedMessage);
+        if(decryptedMessage != null && decryptedMessage.length() > 100) System.out.println("decryptedMessage = " + decryptedMessage.substring(0, 100));
+        else System.out.println("decryptedMessage = " + decryptedMessage);
+        JWTService.HashAlgorithEnum hashAlgorithm = JWTService.HashAlgorithEnum.valueOf(contentHashAlgorithm);
+        if(!jwtService.validateBase64Hash(decryptedMessage, contentHashBase64, hashAlgorithm)) {
+            System.err.println("The content hash has been corrupted, do not continue to use these data!");
+            SendErrorReply("The content hash has been corrupted, do not continue to use these data!");
+        }
+        else {
+            System.out.println("JWT was valid and hash was intact!");
+            SendOKReply("JWT was valid and hash was intact!");
+        }        
     }  
+
+    private static void SendOKReply(String string) {
+    }
+
+    private static void SendErrorReply(String string) {
+    }
 
     private static DecodedJWT verifyToken(RSAPublicKey publicKey, String jwtToken) {
         try {

@@ -108,8 +108,8 @@ public class SimpleJWTService implements JWTService {
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
         return new String(cipher.doFinal(encryptedText));
     }
-
-    public String generateBase64Hash(String text) throws Exception {
+    
+    public String generateBase64Hash(String text, HashAlgorithEnum hashAlgorithm) throws Exception {
         /*MessageDigest messageDigest = MessageDigest.getInstance("SHA-512");
         if(salt != null) messageDigest.update(salt.getBytes(StandardCharsets.UTF_8));
         byte[] bytes = messageDigest.digest(text.getBytes(StandardCharsets.UTF_8));
@@ -128,4 +128,11 @@ public class SimpleJWTService implements JWTService {
         System.out.println("sha512Hex=" + sha512Hex);
         return Base64.encodeBase64String(sha512Hex.getBytes());
     }
+
+    public boolean validateBase64Hash(String text, String contentHashBase64, HashAlgorithEnum hashAlgorithm) {
+        String newSha512Hex = DigestUtils.sha512Hex(text);
+        System.out.println("newSha512Hex=" + newSha512Hex);
+        String newSha512HexBase64 = Base64.encodeBase64String(newSha512Hex.getBytes());
+        return newSha512HexBase64.equals(contentHashBase64);
+    }    
 }
