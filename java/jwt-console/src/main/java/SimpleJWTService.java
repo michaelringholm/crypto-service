@@ -3,11 +3,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -90,9 +90,7 @@ public class SimpleJWTService implements JWTService {
     }
 
     public String decryptRSA(String cipherText, PrivateKey privateKey) throws IOException, GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance("RSA"); // Seems to be defaulting to PCKS1
-        //Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
-        //Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA-256AndMGF1Padding");
+        Cipher cipher = Cipher.getInstance("RSA"); // Defaulting to PCKS1, other options are RSA/ECB/OAEPWithSHA-256AndMGF1Padding and more
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return new String(cipher.doFinal(Base64.decodeBase64(cipherText)), "UTF-8");
     }
@@ -100,39 +98,38 @@ public class SimpleJWTService implements JWTService {
     public String encryptRijndael(String rawText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
-        return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes()));
+        return Base64.encodeBase64String(cipher.doFinal(rawText.getBytes("UTF-8")));
     }
 
     public String decryptRijndael(byte[] encryptedText, byte[] secretKey, byte[] iv) throws IOException, GeneralSecurityException {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secretKey, "AES"), new IvParameterSpec(iv));
-        return new String(cipher.doFinal(encryptedText));
+        return new String(cipher.doFinal(encryptedText), Charset.forName("UTF-8"));
     }
     
-    public String generateBase64Hash(String text, HashAlgorithEnum hashAlgorithm) throws Exception {
-        /*MessageDigest messageDigest = MessageDigest.getInstance("SHA-512");
-        if(salt != null) messageDigest.update(salt.getBytes(StandardCharsets.UTF_8));
-        byte[] bytes = messageDigest.digest(text.getBytes(StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        for(int i=0; i< bytes.length ;i++) sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));        
-        sha512Hash = sb.toString();*/
-
-        /*MessageDigest digest = MessageDigest.getInstance("SHA-512");
-	    digest.reset();
-	    digest.update(text.getBytes("utf8"));
-	    sha512Hash = String.format("%0128x", new BigInteger(1, digest.digest()));        
-        System.out.println("sha512Hash=" + sha512Hash);
-        return Base64.encodeBase64String(sha512Hash.getBytes());*/
-
-        String sha512Hex = DigestUtils.sha512Hex(text);
-        System.out.println("sha512Hex=" + sha512Hex);
-        return Base64.encodeBase64String(sha512Hex.getBytes());
+    public String generateBase64Hash(String text, HashAlgorithEnum hashAlgorithm) throws Exception {       
+        byte[] sha512 = DigestUtils.sha512(text);
+        String sha512Base64 = Base64.encodeBase64String(sha512);
+        System.out.println("sha512Base64=" + sha512Base64);
+        return sha512Base64;
     }
 
-    public boolean validateBase64Hash(String text, String contentHashBase64, HashAlgorithEnum hashAlgorithm) {
+    public String generateHexHash(String text, HashAlgorithEnum hashAlgorithm) throws Exception {
+        String sha512Hex = DigestUtils.sha512Hex(text);
+        System.out.println("sha512Hex=" + sha512Hex);
+        return sha512Hex;
+    }    
+
+    public boolean validateBase64Hash(String text, String base64Hash, HashAlgorithEnum hashAlgorithm) {
+        byte[] newSha512Hash = DigestUtils.sha512(text);        
+        String newSha512HashBase64 = Base64.encodeBase64String(newSha512Hash);
+        System.out.println("newSha512HashBase64=" + newSha512HashBase64);
+        return newSha512HashBase64.equals(base64Hash);
+    }
+
+    public boolean validateHexHash(String text, String hexHash, HashAlgorithEnum hashAlgorithm) {
         String newSha512Hex = DigestUtils.sha512Hex(text);
         System.out.println("newSha512Hex=" + newSha512Hex);
-        String newSha512HexBase64 = Base64.encodeBase64String(newSha512Hex.getBytes());
-        return newSha512HexBase64.equals(contentHashBase64);
+        return newSha512Hex.equals(hexHash);
     }    
 }

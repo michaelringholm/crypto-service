@@ -153,7 +153,9 @@ namespace com.opusmagus.encryption {
                 using (SHA512 sha = new SHA512Managed())
                 {
                     var newHash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
-                    return base64Hash.Equals(Convert.ToBase64String(newHash));
+                    String newBase64Hash = Convert.ToBase64String(newHash);
+                    Console.WriteLine($"newBase64Hash={newBase64Hash}");
+                    return base64Hash.Equals(newBase64Hash);
                 }
             }
             throw new Exception("Unsupported hashing algorithm!");

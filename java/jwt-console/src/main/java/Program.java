@@ -58,8 +58,9 @@ public class Program {
         String secretKey = "pyramids are old"; // Must be 16 bytes to make .Net happy
         String iv = "this is salty bz"; // Must be 16 bytes
         String longSecretData = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "data/large-text2.txt")), Charset.forName("UTF-8"));
-        if(longSecretData != null && longSecretData.length() > 100) System.out.println("longSecretData = " + longSecretData.substring(0,100));
-        else System.out.println("longSecretData = " + longSecretData);
+        if(longSecretData != null && longSecretData.length() > 100) System.out.println("longSecretData=" + longSecretData.substring(0,100));
+        else System.out.println("longSecretData=" + longSecretData);
+        System.out.println("longSecretData.length=" + longSecretData.length());
         String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secretKey, publicKey);
         String rsaEncryptedIVBase64 = jwtService.encryptRSA(iv, publicKey);
         String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(longSecretData, secretKey.getBytes(), iv.getBytes());
@@ -67,6 +68,7 @@ public class Program {
         else System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
         String contentHashBase64 = jwtService.generateBase64Hash(longSecretData, JWTService.HashAlgorithEnum.SHA512);
         System.out.println("contentHashBase64 = " + contentHashBase64);
+        System.out.println("rijndaelEncryptedTextBase64HashBase64 = " + jwtService.generateBase64Hash(rijndaelEncryptedTextBase64, JWTService.HashAlgorithEnum.SHA512));
         Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);        
         JWTCreator.Builder jwtBuilder = JWT.create().withIssuer("commentor.dk").withExpiresAt(DateUtils.addHours(new Date(), 1)).withIssuedAt(new Date());
         jwtBuilder.withClaim("encrypted_key_base64", rsaEncryptedSecretBase64).withClaim("encrypted_iv_base64", rsaEncryptedIVBase64).withClaim("content_hash_base64", contentHashBase64).withClaim("content_hash_algorithm", "SHA512");
@@ -96,13 +98,10 @@ public class Program {
         System.out.println(String.format("secretKey = %s", secretKey));
         System.out.println(String.format("ivBase64 = %s [%d] bytes long", iv, iv.getBytes().length));
         
-        if(simpleMessage.BodyContents != null && simpleMessage.BodyContents.length() > 100)
-            System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents.substring(0, 100)));
-        else
-            System.out.println(String.format("simpleMessage.BodyContents:%s", simpleMessage.BodyContents));
         String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), secretKey.getBytes(), iv.getBytes());
-        if(decryptedMessage != null && decryptedMessage.length() > 100) System.out.println("decryptedMessage = " + decryptedMessage.substring(0, 100));
-        else System.out.println("decryptedMessage = " + decryptedMessage);
+        if(decryptedMessage != null && decryptedMessage.length() > 100) System.out.println("decryptedMessage=" + decryptedMessage.substring(0, 100));
+        else System.out.println("decryptedMessage=" + decryptedMessage);
+        System.out.println(String.format("contentHashBase64=%s", contentHashBase64));
         JWTService.HashAlgorithEnum hashAlgorithm = JWTService.HashAlgorithEnum.valueOf(contentHashAlgorithm);
         if(!jwtService.validateBase64Hash(decryptedMessage, contentHashBase64, hashAlgorithm)) {
             System.err.println("The content hash has been corrupted, do not continue to use these data!");
@@ -153,6 +152,7 @@ public class Program {
                 File nextRequest = nextRequests.next();
                 String jsonRequest = FileUtils.readFileToString(nextRequest, Charset.forName("UTF-8"));
                 SimpleMessage simpleMessage = jsonConverter.fromJson(jsonRequest, SimpleMessage.class);
+                nextRequest.delete();
                 return simpleMessage;
             }
             else {

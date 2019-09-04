@@ -49,19 +49,22 @@ namespace com.opusmagus.encryption
         {
             IJWTService jwtService = new RSAJWTService();
             //var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
-            var longSecretData = File.ReadAllText(".\\resources\\large-text.txt");
+            var longSecretData = File.ReadAllText($@"{LocalFileStorePath}\data\large-text1.txt");
 
             var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
             var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
             var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
-            Console.WriteLine($"encryptedData:{encryptedData}");
+            //Console.WriteLine($"encryptedData:{encryptedData}");
             var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);
-            Console.WriteLine($"decryptedData:{decryptedData}");
+            //Console.WriteLine($"decryptedData:{decryptedData}");
+            if(longSecretData != null && longSecretData.Length > 100) Console.WriteLine("longSecretData=" + longSecretData.Substring(0,100));
+            else Console.WriteLine("longSecretData=" + longSecretData);
+            Console.WriteLine("longSecretData.length=" + longSecretData.Length);
 
             // This key is only known by one party "A"
             var rsaPrivateKeySet1Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set1.key");
-            var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);
+            var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);            
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
                 { "encrypted_key_base64", jwtService.Encrypt(secret, RSAPublicKeySet2Contents) }, // Receivers public key
@@ -75,7 +78,10 @@ namespace com.opusmagus.encryption
             var jwt = jwtService.GenerateJWTFromRSA(payload, rsaPrivateKeySet1Contents, "RS256"); // Senders private  key
             var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
             Console.WriteLine($"serializedJWT:{serializedJWT}");
-            var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents =  SymmetricCryptoService.Encrypt(longSecretData, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt)) };
+            var rijndaelEncryptedDataBase64 = SymmetricCryptoService.Encrypt(longSecretData, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
+            Console.WriteLine($"rijndaelEncryptedDataBase64HashBase64:{jwtService.GenerateBase64Hash(rijndaelEncryptedDataBase64, HashAlgorithmEnum.SHA512)}");
+            Console.WriteLine($"contentHashBase64:{contentHashBase64}");
+            var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents = rijndaelEncryptedDataBase64  };
             SendRequest(simpleMessage);
         }
 
@@ -106,21 +112,18 @@ namespace com.opusmagus.encryption
             var salt = jwtService.Decrypt(encrypteddIVBase64, rsaPrivateKeySet2Contents); // Receivers private key
             Console.WriteLine($"secret={secret}");
             Console.WriteLine($"salt={salt}");
-            //var symKey = Convert.FromBase64String(symKeyBase64);
-            //var symIV = Convert.FromBase64String(symIVBase64);            
-            //var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
             Console.WriteLine($"secret.Length={secret.Length}");
-            var decryptedContent = SymmetricCryptoService.Decrypt(receivedContent, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
-            //var decryptedContent = SymmetricCryptoService.Decrypt(receivedContent, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(iv));
-            if(decryptedContent != null && decryptedContent.Length > 100) Console.WriteLine($"decryptedContent={decryptedContent.Substring(0,100)}");            
-            else Console.WriteLine($"decryptedContent (chunked)={decryptedContent}");
+            var decryptedMessage = SymmetricCryptoService.Decrypt(receivedContent, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));            
+            if(decryptedMessage != null && decryptedMessage.Length > 100) Console.WriteLine($"decryptedMessage={decryptedMessage.Substring(0,100)}");            
+            else Console.WriteLine($"decryptedMessage (chunked)={decryptedMessage}");
+            Console.WriteLine("decryptedMessage.length=" + decryptedMessage.Length);
             Console.WriteLine($"contentHashBase64={contentHashBase64}");
-            string hexContentHash = Encoding.UTF8.GetString(Convert.FromBase64String(contentHashBase64));
+            string hexContentHash = BitConverter.ToString(Convert.FromBase64String(contentHashBase64)).Replace("-", "");
             Console.WriteLine($"contentHashHex={hexContentHash}");
             // Validate content hash
             var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
-            //if(!jwtService.ValidateBase64Hash(decryptedContent, contentHashBase64, hashAlgorithm)) {
-            if(!jwtService.ValidateHexHash(decryptedContent, hexContentHash, hashAlgorithm)) {
+            if(!jwtService.ValidateBase64Hash(decryptedMessage, contentHashBase64, hashAlgorithm)) {
+            //if(!jwtService.ValidateHexHash(decryptedContent, hexContentHash, hashAlgorithm)) {
                 Console.Error.WriteLine("The content hash has been corrupted, do not continue to use these data!");
                 SendErrorReply("The content hash has been corrupted, do not continue to use these data!");
             }
@@ -151,8 +154,9 @@ namespace com.opusmagus.encryption
             while(true) {
                 var nextRequest = Directory.GetFiles($@"{LocalFileStorePath}\requests\").FirstOrDefault();
                 if(nextRequest != null) {
-                    var jsonRequest = File.ReadAllText(nextRequest);
+                    var jsonRequest = File.ReadAllText(nextRequest, Encoding.UTF8);
                     var simpleMessage = JsonConvert.DeserializeObject<SimpleMessage>(jsonRequest);
+                    File.Delete(nextRequest);
                     return simpleMessage;
                 }
                 else {
