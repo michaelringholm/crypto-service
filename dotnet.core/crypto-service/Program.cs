@@ -48,16 +48,13 @@ namespace com.opusmagus.encryption
         private static void SimulateSender()
         {
             IJWTService jwtService = new RSAJWTService();
-            //var shortSecretData = "This is my string content, that I want to encrypt with the receivers public key, THE END.";
             var longSecretData = File.ReadAllText($@"{LocalFileStorePath}\data\large-text1.txt");
 
             var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
             var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
             var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
-            //Console.WriteLine($"encryptedData:{encryptedData}");
             var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);
-            //Console.WriteLine($"decryptedData:{decryptedData}");
             if(longSecretData != null && longSecretData.Length > 100) Console.WriteLine("longSecretData=" + longSecretData.Substring(0,100));
             else Console.WriteLine("longSecretData=" + longSecretData);
             Console.WriteLine("longSecretData.length=" + longSecretData.Length);
@@ -67,8 +64,8 @@ namespace com.opusmagus.encryption
             var contentHashBase64 = jwtService.GenerateBase64Hash(longSecretData, HashAlgorithmEnum.SHA512);            
             var payload = new JwtPayload { 
                 { "iss", "commentor.dk" },
-                { "encrypted_key_base64", jwtService.Encrypt(secret, RSAPublicKeySet2Contents) }, // Receivers public key
-                { "encrypted_iv_base64", jwtService.Encrypt(salt, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_secret_base64", jwtService.Encrypt(secret, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_salt_base64", jwtService.Encrypt(salt, RSAPublicKeySet2Contents) }, // Receivers public key
                 { "content_hash_base64", contentHashBase64 },
                 { "content_hash_algorithm", HashAlgorithmEnum.SHA512.ToString() },
                 { "exp", (Int32) (DateTime.UtcNow.AddHours(1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
@@ -89,27 +86,26 @@ namespace com.opusmagus.encryption
         {
             var simpleMessage = GetRequest();
             IJWTService jwtService = new RSAJWTService();
-            // This key is only known by one party "B"
             var rsaPrivateKeySet2Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set2.key");
             // Checking if JWT signature is valid
             var validationParameters = BuildValidationParameters();
             var receivedJWT = simpleMessage.AuthorizationHeader;
             var receivedContent = simpleMessage.BodyContents;
             var jwtIsValid = jwtService.ValidateJWTRSA(receivedJWT, RSAPublicKeySet1Contents, "RS256", validationParameters); // Senders public key            
-            Console.WriteLine($"JWT is valid:{jwtIsValid}");
+            Console.WriteLine($"JWT validation={jwtIsValid}");
             
             // Decoding if sinature is valid
             var jwtReread = jwtService.ReadJWTRSA(receivedJWT, RSAPublicKeySet1Contents,"RS256", validationParameters); // Senders public key
             Console.WriteLine($"serializedJWTReread:{jwtReread}");
             var contentHashBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_base64" ).Single().Value; // Assuming that it always has data
             var contentHashAlgorithm = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_algorithm" ).Single().Value; // Assuming that it always has data
-            var encryptedKeyBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_key_base64" ).Single().Value; // Assuming that it always has data
-            var encrypteddIVBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_iv_base64" ).Single().Value; // Assuming that it always has data
-            Console.WriteLine($"encryptedKeyBase64={encryptedKeyBase64}");
+            var encryptedSecretBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_secret_base64" ).Single().Value; // Assuming that it always has data
+            var encryptedSaltBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_salt_base64" ).Single().Value; // Assuming that it always has data
+            Console.WriteLine($"encryptedKeyBase64={encryptedSecretBase64}");
 
             // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
-            var secret = jwtService.Decrypt(encryptedKeyBase64, rsaPrivateKeySet2Contents); // Receivers private key            
-            var salt = jwtService.Decrypt(encrypteddIVBase64, rsaPrivateKeySet2Contents); // Receivers private key
+            var secret = jwtService.Decrypt(encryptedSecretBase64, rsaPrivateKeySet2Contents); // Receivers private key            
+            var salt = jwtService.Decrypt(encryptedSaltBase64, rsaPrivateKeySet2Contents); // Receivers private key
             Console.WriteLine($"secret={secret}");
             Console.WriteLine($"salt={salt}");
             Console.WriteLine($"secret.Length={secret.Length}");

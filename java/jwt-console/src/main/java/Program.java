@@ -55,15 +55,15 @@ public class Program {
         RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set1.pem"));
         RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set2.pem"));
 
-        String secretKey = "pyramids are old"; // Must be 16 bytes to make .Net happy
-        String iv = "this is salty bz"; // Must be 16 bytes
+        String secret = "pyramids are old"; // Must be 16 bytes to make .Net happy
+        String salt = "this is salty bz"; // Must be 16 bytes
         String longSecretData = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "data/large-text2.txt")), Charset.forName("UTF-8"));
         if(longSecretData != null && longSecretData.length() > 100) System.out.println("longSecretData=" + longSecretData.substring(0,100));
         else System.out.println("longSecretData=" + longSecretData);
         System.out.println("longSecretData.length=" + longSecretData.length());
-        String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secretKey, publicKey);
-        String rsaEncryptedIVBase64 = jwtService.encryptRSA(iv, publicKey);
-        String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(longSecretData, secretKey.getBytes(), iv.getBytes());
+        String rsaEncryptedSecretBase64 = jwtService.encryptRSA(secret, publicKey);
+        String rsaEncryptedSaltBase64 = jwtService.encryptRSA(salt, publicKey);
+        String rijndaelEncryptedTextBase64 = jwtService.encryptRijndael(longSecretData, secret.getBytes(), salt.getBytes());
         if(rijndaelEncryptedTextBase64 != null && rijndaelEncryptedTextBase64.length() > 100) System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64.substring(0,100));
         else System.out.println("rijndaelEncryptedTextBase64 = " + rijndaelEncryptedTextBase64);
         String contentHashBase64 = jwtService.generateBase64Hash(longSecretData, JWTService.HashAlgorithEnum.SHA512);
@@ -71,7 +71,7 @@ public class Program {
         System.out.println("rijndaelEncryptedTextBase64HashBase64 = " + jwtService.generateBase64Hash(rijndaelEncryptedTextBase64, JWTService.HashAlgorithEnum.SHA512));
         Algorithm algorithmRS = Algorithm.RSA256(publicKey, privateKey);        
         JWTCreator.Builder jwtBuilder = JWT.create().withIssuer("commentor.dk").withExpiresAt(DateUtils.addHours(new Date(), 1)).withIssuedAt(new Date());
-        jwtBuilder.withClaim("encrypted_key_base64", rsaEncryptedSecretBase64).withClaim("encrypted_iv_base64", rsaEncryptedIVBase64).withClaim("content_hash_base64", contentHashBase64).withClaim("content_hash_algorithm", "SHA512");
+        jwtBuilder.withClaim("encrypted_secret_base64", rsaEncryptedSecretBase64).withClaim("encrypted_salt_base64", rsaEncryptedSaltBase64).withClaim("content_hash_base64", contentHashBase64).withClaim("content_hash_algorithm", "SHA512");
         String jwtToken = jwtBuilder.sign(algorithmRS);
         System.out.println("jwtToken = " + jwtToken);
 
@@ -88,17 +88,17 @@ public class Program {
         RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set1.pem"));
                 
         DecodedJWT jwt = verifyToken(publicKey, simpleMessage.AuthorizationHeader);
-        String encryptedkeyBase64 = jwt.getClaim("encrypted_key_base64").asString();
-        String encryptedIVBase64 = jwt.getClaim("encrypted_iv_base64").asString();
+        String encryptedSecretBase64 = jwt.getClaim("encrypted_secret_base64").asString();
+        String encryptedSaltBase64 = jwt.getClaim("encrypted_salt_base64").asString();
         String contentHashBase64 = jwt.getClaim("content_hash_base64").asString();
         String contentHashAlgorithm = jwt.getClaim("content_hash_algorithm").asString();
         
-        String secretKey = jwtService.decryptRSA(encryptedkeyBase64, privateKey);
-        String iv = jwtService.decryptRSA(encryptedIVBase64, privateKey);
-        System.out.println(String.format("secretKey = %s", secretKey));
-        System.out.println(String.format("ivBase64 = %s [%d] bytes long", iv, iv.getBytes().length));
+        String secret = jwtService.decryptRSA(encryptedSecretBase64, privateKey);
+        String salt = jwtService.decryptRSA(encryptedSaltBase64, privateKey);
+        System.out.println(String.format("secret = %s", secret));
+        System.out.println(String.format("salt = %s [%d] bytes long", salt, salt.getBytes().length));
         
-        String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), secretKey.getBytes(), iv.getBytes());
+        String decryptedMessage = jwtService.decryptRijndael(Base64.decodeBase64(simpleMessage.BodyContents), secret.getBytes(), salt.getBytes());
         if(decryptedMessage != null && decryptedMessage.length() > 100) System.out.println("decryptedMessage=" + decryptedMessage.substring(0, 100));
         else System.out.println("decryptedMessage=" + decryptedMessage);
         System.out.println(String.format("contentHashBase64=%s", contentHashBase64));
