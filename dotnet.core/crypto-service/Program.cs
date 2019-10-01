@@ -53,8 +53,6 @@ namespace com.opusmagus.encryption
             var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
             var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
-            var encryptedData = SymmetricCryptoService.Encrypt(longSecretData, symCryptoKey.Key, symCryptoKey.IV);
-            var decryptedData = SymmetricCryptoService.Decrypt(encryptedData, symCryptoKey.Key, symCryptoKey.IV);
             if(longSecretData != null && longSecretData.Length > 100) Console.WriteLine("longSecretData=" + longSecretData.Substring(0,100));
             else Console.WriteLine("longSecretData=" + longSecretData);
             Console.WriteLine("longSecretData.length=" + longSecretData.Length);
@@ -114,8 +112,8 @@ namespace com.opusmagus.encryption
             else Console.WriteLine($"decryptedMessage (chunked)={decryptedMessage}");
             Console.WriteLine("decryptedMessage.length=" + decryptedMessage.Length);
             Console.WriteLine($"contentHashBase64={contentHashBase64}");
-            string hexContentHash = BitConverter.ToString(Convert.FromBase64String(contentHashBase64)).Replace("-", "");
-            Console.WriteLine($"contentHashHex={hexContentHash}");
+            //string hexContentHash = BitConverter.ToString(Convert.FromBase64String(contentHashBase64)).Replace("-", "");
+            //Console.WriteLine($"contentHashHex={hexContentHash}");
             // Validate content hash
             var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
             if(!jwtService.ValidateBase64Hash(decryptedMessage, contentHashBase64, hashAlgorithm)) {
