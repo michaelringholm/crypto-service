@@ -11,8 +11,8 @@ import java.security.interfaces.RSAPublicKey;
 
 public interface JWTService {
     public enum HashAlgorithEnum { SHA512 };
-    public RSAPrivateKey getPrivateKeyFromFile(String filename) throws IOException, GeneralSecurityException;
-    public RSAPublicKey getPublicKeyFromFile(String filename) throws IOException, GeneralSecurityException;
+    public RSAPrivateKey getRSAPrivateKey(String pemPrivateKey) throws IOException, GeneralSecurityException;
+    public RSAPublicKey getRSAPublicKey(String pemPublicKey) throws IOException, GeneralSecurityException;
     public String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException;
     public boolean verify(PublicKey publicKey, String message, String signature) throws SignatureException, NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException;
     public String encryptRSA(String rawText, PublicKey publicKey) throws IOException, GeneralSecurityException;

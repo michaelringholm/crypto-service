@@ -52,8 +52,10 @@ public class Program {
 
     private static void simulateSender() throws Exception {
         JWTService jwtService = new SimpleJWTService();
-        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set1.pem"));
-        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set2.pem"));
+        String pemPrivateKey = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set1.pem")), Charset.forName("UTF-8"));
+        String pemPublicKey = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set2.pem")), Charset.forName("UTF-8"));
+        RSAPrivateKey privateKey = jwtService.getRSAPrivateKey(pemPrivateKey);
+        RSAPublicKey publicKey = jwtService.getRSAPublicKey(pemPublicKey);
 
         String secret = "pyramids are old"; // Must be 16 bytes to make .Net happy
         String salt = "this is salty bz"; // Must be 16 bytes
@@ -84,8 +86,10 @@ public class Program {
     private static void simulateReceiver() throws Exception {
         SimpleMessage simpleMessage = getRequest();
         JWTService jwtService = new SimpleJWTService();
-        RSAPrivateKey privateKey = jwtService.getPrivateKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set2.pem"));
-        RSAPublicKey publicKey = jwtService.getPublicKeyFromFile(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set1.pem"));
+        String pemPrivateKey = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-prv-key-set2.pem")), Charset.forName("UTF-8"));
+        String pemPublicKey = FileUtils.readFileToString(new File(FilenameUtils.concat(LocalFileStorePath, "keys/rsa-pub-key-set1.pem")), Charset.forName("UTF-8"));
+        RSAPrivateKey privateKey = jwtService.getRSAPrivateKey(pemPrivateKey);
+        RSAPublicKey publicKey = jwtService.getRSAPublicKey(pemPublicKey);
                 
         DecodedJWT jwt = verifyToken(publicKey, simpleMessage.AuthorizationHeader);
         String encryptedSecretBase64 = jwt.getClaim("encrypted_secret_base64").asString();

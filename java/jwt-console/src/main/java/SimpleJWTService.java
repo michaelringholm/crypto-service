@@ -24,47 +24,25 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 
 public class SimpleJWTService implements JWTService {
-
-    private static String getKey(String filename) throws IOException {
-        String strKeyPEM = "";
-        BufferedReader br = new BufferedReader(new FileReader(filename));
-        String line;
-        while ((line = br.readLine()) != null) {
-            strKeyPEM += line + "\n";
-        }
-        br.close();
-        return strKeyPEM;
-    }
-
-    public RSAPrivateKey getPrivateKeyFromFile(String filename) throws IOException, GeneralSecurityException {
-        String privateKeyPEM = getKey(filename);
-        return getPrivateKeyFromString(privateKeyPEM);
-    }
-
-    public RSAPrivateKey getPrivateKeyFromString(String key) throws IOException, GeneralSecurityException {
-        String privateKeyPEM = key;
-        privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
-        privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
-        byte[] encoded = Base64.decodeBase64(privateKeyPEM);
+    public RSAPrivateKey getRSAPrivateKey(String pemPrivateKey) throws IOException, GeneralSecurityException {
+        String privateKeyBase64 = pemPrivateKey;
+        privateKeyBase64 = privateKeyBase64.replace("-----BEGIN PRIVATE KEY-----\n", "");
+        privateKeyBase64 = privateKeyBase64.replace("-----END PRIVATE KEY-----", "");
+        byte[] privateKeyBytes = Base64.decodeBase64(privateKeyBase64);
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-        RSAPrivateKey privKey = (RSAPrivateKey) kf.generatePrivate(keySpec);
-        return privKey;
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey)kf.generatePrivate(privateKeySpec);
+        return rsaPrivateKey;
     }
 
-    public RSAPublicKey getPublicKeyFromFile(String filename) throws IOException, GeneralSecurityException {
-        String publicKeyPEM = getKey(filename);
-        return getPublicKeyFromString(publicKeyPEM);
-    }
-
-    public RSAPublicKey getPublicKeyFromString(String key) throws IOException, GeneralSecurityException {
-        String publicKeyPEM = key;
-        publicKeyPEM = publicKeyPEM.replace("-----BEGIN PUBLIC KEY-----\n", "");
-        publicKeyPEM = publicKeyPEM.replace("-----END PUBLIC KEY-----", "");
-        byte[] encoded = Base64.decodeBase64(publicKeyPEM);
+    public RSAPublicKey getRSAPublicKey(String pemPublicKey) throws IOException, GeneralSecurityException {
+        String publicKeyBase64 = pemPublicKey;
+        publicKeyBase64 = publicKeyBase64.replace("-----BEGIN PUBLIC KEY-----\n", "");
+        publicKeyBase64 = publicKeyBase64.replace("-----END PUBLIC KEY-----", "");
+        byte[] publicKeyBytes = Base64.decodeBase64(publicKeyBase64);
         KeyFactory kf = KeyFactory.getInstance("RSA");
-        RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(encoded));
-        return pubKey;
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+        return rsaPublicKey;
     }
 
     public String sign(PrivateKey privateKey, String message) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException {
