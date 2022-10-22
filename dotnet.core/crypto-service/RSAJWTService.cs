@@ -161,8 +161,14 @@ namespace com.opusmagus.encryption {
         }         
 
         public string GenerateBase64Hash(FileStream dataFileStream, HashAlgorithmEnum algorithm) {
-            var md5 = MD5.Create();
-            return Convert.ToBase64String(md5.ComputeHash(dataFileStream));
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var hash = sha.ComputeHash(dataFileStream);
+                    return Convert.ToBase64String(hash);
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
         }
 
         public bool ValidateBase64Hash(string data, string base64Hash, HashAlgorithmEnum algorithm)

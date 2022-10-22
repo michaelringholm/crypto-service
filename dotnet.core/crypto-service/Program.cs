@@ -86,12 +86,12 @@ namespace com.opusmagus.encryption
         private static void EncryptBinaryFile()
         {
             IJWTService jwtService = new RSAJWTService();
-            //var secretBinaryData = File.ReadAllText($@"{LocalFileStorePath}\data\large-input.bin");
+            //var secretBinaryData = File.ReadAllText($@"{LocalFileStorePath}\data\large-input.bin");            
             FileStream secretBinaryData=new FileStream($@"{LocalFileStorePath}\data\large-input.bin", FileMode.Open);
             FileStream secretBinaryDataEncrypted=new FileStream($@"{LocalFileStorePath}\data\large-input-enc.bin", FileMode.OpenOrCreate);
-
-            var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
-            var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
+            
+            var secret = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())).Substring(0,16); // Should be exactly 16 bytes 
+            var salt = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())).Substring(0,16); // Should be exactly 16 bytes 
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
 
             // This key is only known by one party "A"
@@ -109,7 +109,7 @@ namespace com.opusmagus.encryption
             // Creating signed JWT
             var jwt = jwtService.GenerateJWTFromRSA(payload, rsaPrivateKeySet1Contents, "RS256"); // Senders private  key
             var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
-            File.WriteAllText($@"{LocalFileStorePath}\data\file-based.jwt", serializedJWT);
+            File.WriteAllText($@"{LocalFileStorePath}\data\{DateTime.Now.ToString("yyyy-MM-dd_HH#mm#ss")}file-based.jwt", serializedJWT);
             Console.WriteLine($"serializedJWT:{serializedJWT}");
             SymmetricCryptoService.EncryptFile(secretBinaryData, secretBinaryDataEncrypted, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
             secretBinaryData.Close();
@@ -124,8 +124,8 @@ namespace com.opusmagus.encryption
             IJWTService jwtService = new RSAJWTService();
             var longSecretData = File.ReadAllText($@"{LocalFileStorePath}\data\large-text1.txt");
 
-            var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
-            var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
+            var secret = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())).Substring(0,16); // Should be exactly 16 bytes 
+            var salt = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())).Substring(0,16); // Should be exactly 16 bytes 
             var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
             if(longSecretData != null && longSecretData.Length > 100) Console.WriteLine("longSecretData=" + longSecretData.Substring(0,100));
             else Console.WriteLine("longSecretData=" + longSecretData);
