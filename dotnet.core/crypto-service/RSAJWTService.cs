@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -145,7 +146,24 @@ namespace com.opusmagus.encryption {
                 }
             }
             throw new Exception("Unsupported hashing algorithm!");
-        }        
+        }
+
+        public string GenerateBase64Hash(byte[] data, HashAlgorithmEnum algorithm)
+        {
+            if(algorithm == HashAlgorithmEnum.SHA512) {
+                using (SHA512 sha = new SHA512Managed())
+                {
+                    var hash = sha.ComputeHash(data);
+                    return Convert.ToBase64String(hash);
+                }
+            }
+            throw new Exception("Unsupported hashing algorithm!");
+        }         
+
+        public string GenerateBase64Hash(FileStream dataFileStream, HashAlgorithmEnum algorithm) {
+            var md5 = MD5.Create();
+            return Convert.ToBase64String(md5.ComputeHash(dataFileStream));
+        }
 
         public bool ValidateBase64Hash(string data, string base64Hash, HashAlgorithmEnum algorithm)
         {

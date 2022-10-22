@@ -33,16 +33,90 @@ namespace com.opusmagus.encryption
             Console.WriteLine("1. Simulate Sender");
             Console.WriteLine("2. Simulate Receiver");
             Console.WriteLine("3. Simulate Receiver With Bad Key");
-            Console.WriteLine("4. Exit");
+            Console.WriteLine("4. Encrypt binary file");
+            Console.WriteLine("5. Decrypt binary file");
+            Console.WriteLine("6. Exit");
             int keyRead = Console.In.Read();
             switch(keyRead) {
                 case '1' : SimulateSender(); break;
                 case '2' : SimulateReceiver(); break;
                 case '3' : SimulateReceiverWithBadKey(); break;
-                case '4' : Console.WriteLine("Exiting!"); break;
+                case '4' : EncryptBinaryFile(); break;
+                case '5' : DecryptBinaryFile(); break;
+                case '6' : Console.WriteLine("Exiting!"); break;
                 default : Console.Error.WriteLine("Unknown choice!"); break;
             }       
             Console.WriteLine("Ended!");
+        }
+
+        private static void DecryptBinaryFile()
+        {
+            IJWTService jwtService = new RSAJWTService();
+            var rsaPrivateKeySet2Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set2.key");
+            FileStream secretBinaryDataEncrypted=new FileStream($@"{LocalFileStorePath}\data\large-input-enc.bin", FileMode.Open);
+            FileStream secretBinaryDataDecrypted=new FileStream($@"{LocalFileStorePath}\data\large-input-dec.bin", FileMode.OpenOrCreate);
+            // Checking if JWT signature is valid
+            var validationParameters = BuildValidationParameters();
+            var receivedJWT = File.ReadAllText($@"{LocalFileStorePath}\data\file-based.jwt");
+            //var receivedContent = simpleMessage.BodyContents;
+            var jwtIsValid = jwtService.ValidateJWTRSA(receivedJWT, RSAPublicKeySet1Contents, "RS256", validationParameters); // Senders public key            
+            Console.WriteLine($"JWT validation={jwtIsValid}");
+            
+            // Decoding if sinature is valid
+            var jwtReread = jwtService.ReadJWTRSA(receivedJWT, RSAPublicKeySet1Contents,"RS256", validationParameters); // Senders public key
+            Console.WriteLine($"serializedJWTReread:{jwtReread}");
+            var contentHashBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_base64" ).Single().Value; // Assuming that it always has data
+            var contentHashAlgorithm = jwtReread.Payload.Claims.Where(c => c.Type == "content_hash_algorithm" ).Single().Value; // Assuming that it always has data
+            var encryptedSecretBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_secret_base64" ).Single().Value; // Assuming that it always has data
+            var encryptedSaltBase64 = jwtReread.Payload.Claims.Where(c => c.Type == "encrypted_salt_base64" ).Single().Value; // Assuming that it always has data
+            Console.WriteLine($"encryptedKeyBase64={encryptedSecretBase64}");
+
+            // Note: The private key from set2 should only be held by opposing party, and never exchanged, as with all private keys
+            var secret = jwtService.Decrypt(encryptedSecretBase64, rsaPrivateKeySet2Contents); // Receivers private key            
+            var salt = jwtService.Decrypt(encryptedSaltBase64, rsaPrivateKeySet2Contents); // Receivers private key
+            Console.WriteLine($"secret={secret}");
+            Console.WriteLine($"salt={salt}");
+            Console.WriteLine($"secret.Length={secret.Length}");
+            var hashAlgorithm = HashAlgorithmEnum.Parse<HashAlgorithmEnum>(contentHashAlgorithm);
+            SymmetricCryptoService.DecryptFile(secretBinaryDataEncrypted, secretBinaryDataDecrypted, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
+                secretBinaryDataEncrypted.Close();
+                secretBinaryDataDecrypted.Close();
+        }
+
+        private static void EncryptBinaryFile()
+        {
+            IJWTService jwtService = new RSAJWTService();
+            //var secretBinaryData = File.ReadAllText($@"{LocalFileStorePath}\data\large-input.bin");
+            FileStream secretBinaryData=new FileStream($@"{LocalFileStorePath}\data\large-input.bin", FileMode.Open);
+            FileStream secretBinaryDataEncrypted=new FileStream($@"{LocalFileStorePath}\data\large-input-enc.bin", FileMode.OpenOrCreate);
+
+            var secret = "my-awesome-pw123"; // Should be exactly 16 bytes 
+            var salt = "my-tasty-salt123"; // Should be exactly 16 bytes
+            var symCryptoKey = SymmetricCryptoService.CreateSymmetricKey(secret, salt);
+
+            // This key is only known by one party "A"
+            var rsaPrivateKeySet1Contents = File.ReadAllText($@"{LocalFileStorePath}\keys\rsa-prv-key-set1.key");
+            var contentHashBase64 = jwtService.GenerateBase64Hash(secretBinaryData, HashAlgorithmEnum.SHA512);            
+            var payload = new JwtPayload { 
+                { "iss", "commentor.dk" },
+                { "encrypted_secret_base64", jwtService.Encrypt(secret, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "encrypted_salt_base64", jwtService.Encrypt(salt, RSAPublicKeySet2Contents) }, // Receivers public key
+                { "content_hash_base64", contentHashBase64 },
+                { "content_hash_algorithm", HashAlgorithmEnum.SHA512.ToString() },
+                { "exp", (Int32) (DateTime.UtcNow.AddHours(1).Subtract (new DateTime (1970, 1, 1))).TotalSeconds }, 
+                { "iat", (Int32) (DateTime.UtcNow.Subtract(new DateTime (1970, 1, 1))).TotalSeconds }
+            };
+            // Creating signed JWT
+            var jwt = jwtService.GenerateJWTFromRSA(payload, rsaPrivateKeySet1Contents, "RS256"); // Senders private  key
+            var serializedJWT = new JwtSecurityTokenHandler().WriteToken(jwt);
+            File.WriteAllText($@"{LocalFileStorePath}\data\file-based.jwt", serializedJWT);
+            Console.WriteLine($"serializedJWT:{serializedJWT}");
+            SymmetricCryptoService.EncryptFile(secretBinaryData, secretBinaryDataEncrypted, Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(salt));
+            secretBinaryData.Close();
+            secretBinaryDataEncrypted.Close();
+            //Console.WriteLine($"rijndaelEncryptedDataBase64HashBase64:{jwtService.GenerateBase64Hash(rijndaelEncryptedDataBase64, HashAlgorithmEnum.SHA512)}");
+            //Console.WriteLine($"contentHashBase64:{contentHashBase64}");
+            //var simpleMessage = new SimpleMessage{ AuthorizationHeader = serializedJWT, BodyContents = rijndaelEncryptedDataBase64  };
         }
 
         private static void SimulateSender()

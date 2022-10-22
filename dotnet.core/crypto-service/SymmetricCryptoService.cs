@@ -16,10 +16,10 @@ namespace crypto.symmetric
             return new SymmetricCryptoKey{Key=key, IV=iv};
         }
 
-        public static string Encrypt(string data, byte[] key, byte[] iv)
+        public static string Encrypt(string data, byte[] key, byte[] iv, SymmetricAlgorithm symAlgo=null)
         {  
+            if(symAlgo==null) symAlgo=new RijndaelManaged();
             MemoryStream memStream = new MemoryStream();
-            SymmetricAlgorithm symAlgo = new RijndaelManaged();
             symAlgo.Padding = PaddingMode.PKCS7;
             CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateEncryptor(key, iv), CryptoStreamMode.Write);
             StreamWriter streamWriter = new StreamWriter(cryptoStream); 
@@ -34,11 +34,34 @@ namespace crypto.symmetric
             return encodedStringBase64;
         }
 
-        public static string Decrypt(string encodedStringBase64, byte[] key, byte[] iv)
+        public static void EncryptFile(FileStream inputStream, FileStream outputStream, byte[] key, byte[] iv, SymmetricAlgorithm symAlgo=null)
         {  
+            if(symAlgo==null) symAlgo=new RijndaelManaged();
+            symAlgo.Padding = PaddingMode.PKCS7;
+            inputStream.Seek(0,0);
+            CryptoStream cryptoStream = new CryptoStream(outputStream, symAlgo.CreateEncryptor(key, iv), CryptoStreamMode.Write);
+            //StreamWriter streamWriter = new StreamWriter(cryptoStream);
+            //StreamReader streamReader = new StreamReader(inputStream);
+            //streamWriter.Write(inputStream);
+            inputStream.CopyTo(cryptoStream);
+            //streamWriter.Flush();
+            //streamWriter.Close();
+            cryptoStream.Close();
+        }
+
+        public static void DecryptFile(FileStream inputStream, FileStream outputStream, byte[] key, byte[] iv, SymmetricAlgorithm symAlgo=null)
+        {  
+            if(symAlgo==null) symAlgo=new RijndaelManaged();
+            symAlgo.Padding = PaddingMode.PKCS7;
+            CryptoStream cryptoStream = new CryptoStream(outputStream, symAlgo.CreateDecryptor(key, iv), CryptoStreamMode.Write, true);
+            inputStream.CopyTo(cryptoStream);
+            cryptoStream.Close();
+        }                   
+
+        public static string Decrypt(string encodedStringBase64, byte[] key, byte[] iv, SymmetricAlgorithm symAlgo=null)
+        {  
+            if(symAlgo==null) symAlgo=new RijndaelManaged();
             MemoryStream memStream = new MemoryStream();
-            SymmetricAlgorithm symAlgo = new RijndaelManaged();
-            //symAlgo.Padding = PaddingMode.PKCS7;
             symAlgo.Padding = PaddingMode.PKCS7;
             CryptoStream cryptoStream = new CryptoStream(memStream, symAlgo.CreateDecryptor(key, iv), CryptoStreamMode.Write, true);
             var encodedBytes = Convert.FromBase64String(encodedStringBase64);
